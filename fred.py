@@ -1,6 +1,5 @@
 """
 To do:
-    Set time to 8 yrs (vs 96 obs) for comparison to prior recessions
     Rework normal chart behavior to accept a dataframe as the input, so manipulation can be done before charting
     Select items to monitor on dashboard
 """
@@ -230,6 +229,14 @@ p.line(x='date',y='difference', source=ColumnDataSource(df),
                legend_label='Personal Income excluding transfers',
                color='purple')
 show(p)
+
+#Manufacturing, employment, retail sales
+series=['RSAFS','IPMAN','PAYEMS']
+p=chart(series,'2019-01-01',transformation='index',transform_date='2020-02-01',title='Employment, Manufacturing, and Sales')
+show(p)
+
+#Local vs National employment
+show(chart(['UNRATENSA','CASACR5URN','IURNSA','CAINSUREDUR'],'2019-01-01',title='National and Local Employment'))
 
 
 #Employment Charts
