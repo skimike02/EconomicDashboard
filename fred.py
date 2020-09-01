@@ -8,23 +8,21 @@ import json
 import requests as r
 import pandas as pd
 import itertools
-from bokeh.plotting import figure, show, save
+from bokeh.plotting import figure, show
 from bokeh.models import NumeralTickFormatter,ColumnDataSource,HoverTool, Range1d,Panel,Tabs,Div,LinearAxis
 from bokeh.layouts import layout,Spacer
 from bokeh.palettes import Category10, Category20
 import datetime
 import numpy as np
 import config
+import math
+import datetime
+
 
 api_key=config.api_key
 
-y2k='2000-01-01'
-cy='2020-01-01'
-series=['LNU03023653','LNU03025699','ICSA','ICNSA','CAICLAIMS','UNRATE','UNRATENSA']
 recession_starts=['2020-02-01','2007-12-01','2001-03-01','1990-07-01','1981-07-01','1980-01-01','1973-11-01','1969-12-01',]
-PUA_url='https://oui.doleta.gov/unemploy/docs/weekly_pandemic_claims.xlsx'
 
-pua_data=pd.read_excel(PUA_url)
 
 
 def master_data(series):
@@ -45,12 +43,14 @@ def master_data(series):
     df=df.join(df2, rsuffix='_release')
     return df
 
-def observations(series:str,start:str):
+def observations(series:str,start:str,**kwargs):
+    dateoffset=kwargs.get('dateoffset', 0)
     obs_url=f'https://api.stlouisfed.org/fred/series/observations?series_id={series}&api_key={api_key}&file_type=json&observation_start={start}'
     dict=json.loads(r.get(obs_url).content).get('observations')
     df=pd.DataFrame.from_dict(dict).astype({'date':'datetime64[ns]','realtime_end':'datetime64[ns]','realtime_start':'datetime64[ns]','value':'float'},errors='ignore')
     df['value'] = pd.to_numeric(df['value'],errors='coerce')
     df.drop(columns=['realtime_start','realtime_end'],inplace=True)
+    df.date=df.date+np.timedelta64(dateoffset,'D')
     return df
 
 def transform(df,*args, **kwargs):
@@ -62,6 +62,7 @@ def transform(df,*args, **kwargs):
 
 def chart(series:list,start:str,**kwargs):
     mdata=master_data(series)
+    offsets=kwargs.get('offsets',[0 for x in range(len(series))])
     transformation=kwargs.get('transformation','value')
     transform_date=kwargs.get('transform_date',start)
     hover_formatter='@'+transformation+'{0,}'
@@ -78,8 +79,9 @@ def chart(series:list,start:str,**kwargs):
             sizing_mode='stretch_width'
             )
     units=[]
-    for series,color in zip(series,colors):
+    for series,color,offset in zip(series,colors,offsets):
         df=transform(observations(series,start),date=transform_date)
+        df['date']=df.date+datetime.timedelta(days=offset)
         df['name']=mdata.loc[series].series_name
         df['datestring']=df.date.dt.strftime("%Y-%m-%d")
         source = ColumnDataSource(df)
@@ -118,7 +120,7 @@ def datecompare(source,start,end):
     df=source[(source['date']>=start)&(source['date']<end)&(source['date']<=start_date.replace(year = start_date.year + 8))]
     return df
 
-def historical_data(series,recessions):
+def historical_data(series,recessions:int):
     mdata=master_data([series])
     data=observations(series,'1900-01-01')
     df=pd.DataFrame()
@@ -196,67 +198,36 @@ def adder_chart(base:str,adder,recessions):
     p.renderers[0]._property_values['glyph'].line_dash='dashed'
     return(p)
 
-#Retail sales percent recovery        
-retail_sales=['RSHPCS','RSGASS','RSCCAS','RSSGHBMS','RSGMS','RSMSR','RSNSR','RSFSDP','RSMVPD','RSFHFS','RSEAS','RSBMGESD','RSDBS']
-p=chart(retail_sales,'2019-01-01',transformation='index',transform_date='2020-02-01')
-for i in p.legend[0]._property_values['items']:
-    i._property_values['label']['value']=i._property_values['label']['value'][22:]
-show(p)
+def category_compare(series:list,title:str,**kwargs):
+    metric=kwargs.get('metric', 'pct')
+    categories, pct_change, change, month_change, month_pct_change=[],[],[],[],[]
+    masterdata=master_data(series)
+    for item in series:
+        data=transform(observations(item,'2020-02-01'),date='2020-02-01')
+        change.append(data.tail(1).iloc[0]['difference'])
+        pct_change.append(data.tail(1).iloc[0]['index']-1)
+        month_change.append(data.value.tail(1).iloc[0]-data.value.tail(2).head(1).iloc[0])
+        month_pct_change.append(data.value.tail(1).iloc[0]/data.value.tail(2).head(1).iloc[0]-1)
+        categories.append(masterdata.loc[item].series_name[kwargs.get('nameoffset', 0):])
+    if metric=='pct':
+        sort_field = sorted(categories, key=lambda x: pct_change[categories.index(x)])
+        bar_field=pct_change
+        scatter_field=month_pct_change
+        tickformat="0%"
+    else:
+        sort_field = sorted(categories, key=lambda x: change[categories.index(x)])
+        bar_field=change
+        scatter_field=month_change
+        tickformat="0.0"
+    p = figure(x_range=sort_field, plot_height=700, title=title,
+               toolbar_location='right', tools="save")
+    p.vbar(x=categories, top=bar_field, width=0.9, legend_label='since Feb')
+    p.scatter(x=categories, y=scatter_field, color='red', legend_label=masterdata.observation_end.max())
+    p.xaxis.major_label_orientation=math.pi/2.2
+    p.yaxis.formatter=NumeralTickFormatter(format=tickformat)
+    p.legend.location = "top_left"
+    return(p)
 
-#Compensation and UI change
-compensation_and_ui=['W209RC1','W825RC1']
-p=chart(compensation_and_ui,cy,transformation='difference',transform_date='2020-02-01')
-p.renderers[0].data_source.data['difference']=p.renderers[0].data_source.data['difference']*-1
-p.legend[0]._property_values['items'][0]._property_values['label']['value']='Loss in Compensation since Feb 2020'
-p.legend[0]._property_values['items'][1]._property_values['label']['value']='Increase in Unemployment Insurance since Feb 2020'
-p.legend.location = "top_left"
-show(p)
-
-#Personal Income and Spending
-personal_income=['PI','PCE','A063RC1']
-p=chart(personal_income,cy,transformation='difference',transform_date='2020-02-01')
-
-pi=observations('PI',cy)
-transfers=observations('A063RC1',cy)
-tmp=pi.join(transfers,rsuffix='transfers')
-tmp['value']=tmp['value']-tmp['valuetransfers']
-df=transform(tmp,date='2020-02-01')
-df['name']='Personal Income excluding transfers'
-df['datestring']=df.date.dt.strftime("%Y-%m-%d")
-
-
-p.line(x='date',y='difference', source=ColumnDataSource(df),
-               legend_label='Personal Income excluding transfers',
-               color='purple')
-show(p)
-
-#Manufacturing, employment, retail sales
-series=['RSAFS','IPMAN','PAYEMS']
-p=chart(series,'2019-01-01',transformation='index',transform_date='2020-02-01',title='Employment, Manufacturing, and Sales')
-show(p)
-
-#Local vs National employment
-show(chart(['UNRATENSA','CASACR5URN','IURNSA','CAINSUREDUR'],'2019-01-01',title='National and Local Employment'))
-
-
-#Employment Charts
-paired_series={'UNRATENSA':'CASACR5URN',
-                 'IURNSA':'CAINSUREDUR',}
-charts=[]
-recessions=5
-for i in paired_series:
-    charts.append([historical_comparison(historical_data(i,recessions)),
-                   historical_comparison(historical_data(paired_series[i],recessions))
-                   ,Spacer(width=30, height=10, sizing_mode='fixed')])
-charts[0][0].y_range=charts[0][1].y_range
-charts[1][0].y_range=charts[1][1].y_range
-charts.append([
-                adder_chart('ICNSA',pua_data.groupby(by='Rptdate').sum()[['PUA IC']].rename(columns={'PUA IC':'value'}),recessions),
-                adder_chart('CAICLAIMS',pua_data[pua_data.State=='CA'][['Rptdate','PUA IC']].rename(columns={'PUA IC':'value'}),recessions),
-                Spacer(width=30, height=10, sizing_mode='fixed')
-                ])
-charts.append([historical_comparison(historical_data('LNU03025699',recessions)),
-              historical_comparison(historical_data('UEMP15T26',recessions)),
-              Spacer(width=30, height=10, sizing_mode='fixed')
-    ])
-show(layout(charts,sizing_mode='stretch_width'))
+def padding():
+    padding=Spacer(width=30, height=10, sizing_mode='fixed')
+    return padding
