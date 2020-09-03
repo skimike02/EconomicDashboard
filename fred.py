@@ -256,7 +256,7 @@ def datecompare(source,start,end,**kwargs):
     return df
 
 def historical_data(series,recessions:int,**kwargs):
-    mdata=master_data([series])
+    mdata=master_data([series]).loc[series]
     data=observations(series,'1900-01-01')
     df=pd.DataFrame()
     for start,end in zip(recession_starts[:recessions],[datetime.datetime.now()]+recession_starts[:recessions-1]):
@@ -272,10 +272,10 @@ def historical_data(series,recessions:int,**kwargs):
 
 def historical_comparison(data):
     mdata=data['master_data']
-    frequency=mdata.iloc[0].frequency
+    frequency=mdata.frequency
     df=data['data']
     formatter=data['formatter']
-    p = figure(title=mdata.iloc[0]['series_name']+' in past recessions ('+mdata.iloc[0]['seasonal_adjustment_short']+')',
+    p = figure(title=mdata.series_name+' in past recessions ('+mdata.seasonal_adjustment_short+')',
                plot_width=200, plot_height=400,
                tools="pan,wheel_zoom,reset,save",
                active_scroll=None,
@@ -314,7 +314,7 @@ def historical_comparison(data):
             formatters={'@date': 'datetime'})
     p.add_tools(hover)
     p.renderers[0]._property_values['glyph'].line_width=3
-    p.yaxis.axis_label=mdata.iloc[0].units
+    p.yaxis.axis_label=mdata.units
     p.yaxis.formatter=NumeralTickFormatter(format=tickformat)
     p.xaxis.axis_label='Months since Recession Start'
     return p
