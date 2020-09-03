@@ -108,7 +108,7 @@ def base_dataset(weeks):
     df.NAICS=df.NAICS.str.rstrip(' ')
     return df.merge(naics_table(),how='left',on='NAICS')
         
-
+df=base_dataset(3)
     
 qa={'20-6':'business is closed',
     '19-7':'expect to close in the next 6 months',
@@ -119,8 +119,8 @@ qa={'20-6':'business is closed',
     '7-1':'rehired employees last week'}
 
 locations=['Sacramento-Roseville-Folsom, CA MSA','CA','National']
-p=compare_questions_locations(df,qa,locations)
+p=compare_questions_locations(df[df.date=='2020-08-22'],qa,locations)
 show(p)
 
-p=compare_questions_locations(df2,qa,locations)
+p=compare_questions_locations(df[df.date=='2020-08-15'],qa,locations)
 show(p)
