@@ -69,7 +69,7 @@ def master_data(seriess:list):
                 payload=r.get(url_series)
             if payload.status_code!=200:
                 print("error retrieving"+url_series)
-                print("response: "+payload.content)
+                print("response: "+payload.content.decode("utf-8") )
             series_dict[series]=json.loads(payload.content)['seriess'][0]
             series_dict[series]['timestamp']=datetime.datetime.now()
             url_series_release=f'https://api.stlouisfed.org/fred/series/release?series_id={series}&api_key={api_key}&file_type=json'
@@ -176,14 +176,17 @@ def chart(series:list,start:str,**kwargs):
                y=transformation,
                source=source,
                legend_label=mdata.loc[series].series_name[kwargs.get('lstrip', 0):len(mdata.loc[series].series_name)-kwargs.get('rstrip', 0)],
-               color=color
+               color=color,muted_color=color, muted_alpha=0.2
             )
         units.append(mdata.loc[series].units)
+        if ((df.value.max()<100) & (transformation!='index')):
+            hover_formatter='@'+transformation+'{0.0}'
     hover = HoverTool(tooltips =[
          ('Measure','@name'),
          ('Date','@datestring'),
          ('Value',hover_formatter),
          ])
+    p.legend.click_policy="mute"
     p.add_tools(hover)
     p.yaxis.formatter=NumeralTickFormatter(format="0,")
     if transformation=='index':
@@ -217,20 +220,32 @@ def bar_chart(series:list,start:str,**kwargs):
         df=df[['datestring',name]].copy()
         chart_data=chart_data.merge(df,how='outer',on='datestring',copy=True)
         units.append(mdata.loc[series_item].units)
-    source = ColumnDataSource(chart_data)    
-    p = figure(title=kwargs.get('title','Chart'),x_range=chart_data.datestring.tolist(),plot_width=200, plot_height=400,
+    names=chart_data.drop(columns='datestring').columns.tolist()
+    chart_data.set_index('datestring',inplace=True)
+    """
+    increases=[x for x in chart_data.drop(columns='datestring').columns.tolist() if x[-8:]=='increase']
+    increases.append('datestring')
+    decreases=[x for x in chart_data.drop(columns='datestring').columns.tolist() if x[-8:]=='decrease']
+    decreases.append('datestring')
+    """
+    p = figure(title=kwargs.get('title','Chart'),x_range=chart_data.reset_index().datestring.tolist(),plot_width=200, plot_height=400,
        tools="pan,wheel_zoom,reset,save,hover",
        tooltips="$name @datestring: @$name{0,}",
        active_scroll=None,
        sizing_mode='stretch_width',
         )
-    names=chart_data.drop(columns='datestring').columns.tolist()
     p.vbar_stack(names,
                  x='datestring', 
                  width=0.9,
                  color=palette[0:len(names)],
-                 source=source,
+                 source=ColumnDataSource(chart_data.clip(lower=0).reset_index()) ,
                  legend_label=names)
+    p.vbar_stack(names,
+             x='datestring', 
+             width=0.9,
+             color=palette[0:len(names)],
+             source=ColumnDataSource(chart_data.clip(upper=0).reset_index()) 
+             )
 
     p.yaxis.formatter=NumeralTickFormatter(format="0,")
     if transformation=='index':
@@ -264,7 +279,7 @@ def historical_data(series,recessions:int,**kwargs):
     high=df.value.max()
     if high>100:
         formatter='{0,}'
-    elif mdata.iloc[0].units=='Percent':
+    elif mdata.units=='Percent':
         formatter='{0.0%}'
     else:
         formatter='{0.0}'
@@ -272,7 +287,6 @@ def historical_data(series,recessions:int,**kwargs):
 
 def historical_comparison(data):
     mdata=data['master_data']
-    frequency=mdata.frequency
     df=data['data']
     formatter=data['formatter']
     p = figure(title=mdata.series_name+' in past recessions ('+mdata.seasonal_adjustment_short+')',
@@ -304,7 +318,8 @@ def historical_comparison(data):
                source=source,
                legend_label=recession,
                color=color,
-               line_width=0.5)
+               line_width=0.5,
+               muted_color=color, muted_alpha=0.2)
         hover = HoverTool(tooltips =[
          ('Recession','@recession_year'),
          ('Month','@month{0}'),
@@ -313,6 +328,7 @@ def historical_comparison(data):
          ],
             formatters={'@date': 'datetime'})
     p.add_tools(hover)
+    p.legend.click_policy="mute"
     p.renderers[0]._property_values['glyph'].line_width=3
     p.yaxis.axis_label=mdata.units
     p.yaxis.formatter=NumeralTickFormatter(format=tickformat)

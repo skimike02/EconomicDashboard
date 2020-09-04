@@ -11,13 +11,29 @@ from fred import (master_data, observations, transform, chart, bar_chart, histor
 from bokeh.plotting import figure, show, save
 from bokeh.models import NumeralTickFormatter,ColumnDataSource,HoverTool, Range1d,Panel,Tabs,Div,LinearAxis
 from bokeh.layouts import layout,Spacer
+import config
 
 PUA_url='https://oui.doleta.gov/unemploy/docs/weekly_pandemic_claims.xlsx'
 pua_data=pd.read_excel(PUA_url)
-fileloc="C:\\Users\\Micha\\Documents\\GitHub\\EconomicDashboard"
+fileloc=config.fileloc
 
 y2k='2000-01-01'
 cy='2020-01-01'
+
+#Overall Trends
+series=['RSAFS','IPMAN','PAYEMS','DGORDER']
+national_trends=chart(series,'2019-01-01',transformation='index',transform_date='2020-02-01',title='Employment, Manufacturing, and Sales')
+employment=chart(['PAYEMS'],'2000-01-01',title='Employment')
+employment.legend.location='top_left'
+unemployment=chart(['UNRATENSA','CAURN','CASACR5URN'],'2000-01-01')
+unemployment.legend.location='top_left'
+
+overall_trends=Panel(child=layout([
+    [national_trends,employment,padding()],
+    [unemployment,padding()]
+    ],
+    sizing_mode='stretch_width'),
+    title='Overall Trends')
 
 #Weekly Claims
 recessions=5
@@ -33,14 +49,6 @@ weekly_claims=Panel(child=layout([
     sizing_mode='stretch_width'),
     title="Weekly Claims")
 
-#Overall Trends
-series=['RSAFS','IPMAN','PAYEMS','DGORDER']
-national_trends=chart(series,'2019-01-01',transformation='index',transform_date='2020-02-01',title='Employment, Manufacturing, and Sales')
-overall_trends=Panel(child=layout([
-    [national_trends,padding()]
-    ],
-    sizing_mode='stretch_width'),
-    title='Overall Trends')
 
 #ADP Charts
 adp_sectors=['NPPSPT','NPPGPT']
@@ -49,10 +57,10 @@ adp_sizes=['NPPTS1','NPPTS2','NPPTM','NPPTL1','NPPTL2']
 
 sector_index=chart(adp_sectors,cy,transformation='index',transform_date='2020-02-01',title='National Nonfarm Private Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
 sector_index_bar=bar_chart(adp_sectors,cy,title='National Nonfarm Private Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
-sector_difference_bar=bar_chart(adp_sectors,cy,transformation='difference',transform_date='2020-02-01',title='National Nonfarm Private Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
+sector_difference_bar=bar_chart(adp_sectors,cy,transformation='difference',transform_date='2020-02-01',title='Change in Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
 size_index=chart(adp_sizes,cy,transformation='index',transform_date='2020-02-01',title='National Nonfarm Private Payroll by Business Size (ADP)',lstrip=16)
 size_index_bar=bar_chart(adp_sizes,cy,title='National Nonfarm Private Payroll by Business Size (ADP)',lstrip=16)
-size_difference_bar=bar_chart(adp_sizes,cy,transformation='difference',transform_date='2020-02-01',title='National Nonfarm Private Payroll by Business Size (ADP)',lstrip=16)
+size_difference_bar=bar_chart(adp_sizes,cy,transformation='difference',transform_date='2020-02-01',title='Change in Payroll by Business Size (ADP)',lstrip=16)
 copyright_note=Div(text="<p>Copyright Automatic Data Processing, Inc. Retrieved from FRED, Federal Reserve Bank of St. Louis</p>")
 
 ADP=Panel(child=layout([
@@ -64,6 +72,27 @@ ADP=Panel(child=layout([
     sizing_mode='stretch_width'),
     title='ADP Monthly Data')
 
+#Jobs Report
+recessions=5
+national_jobs=historical_comparison(historical_data('UNRATENSA',recessions))
+state_jobs=historical_comparison(historical_data('CAURN',recessions))
+local_jobs=historical_comparison(historical_data('CASACR5URN',recessions))
+national_jobs.y_range=state_jobs.y_range
+local_jobs.y_range=state_jobs.y_range
+permanent_unemployment=historical_comparison(historical_data('LNU03025699',recessions))
+long_term_unemployment=historical_comparison(historical_data('UEMP15T26',recessions))
+long_term_unemployment.y_range=permanent_unemployment.y_range
+occupations=['LNU02032201','LNU02032204','LNU02032205','LNU02032208','LNU02032212']
+employment_by_occupation=category_compare(occupations,'Change in Employment by Occupation',nameoffset=19)
+employment_by_occupation.legend.location='bottom_left'
+
+Jobs=Panel(child=layout([
+    [national_jobs,state_jobs,local_jobs,padding()],
+    [permanent_unemployment,long_term_unemployment,padding()],
+    [employment_by_occupation,padding()]
+    ],
+    sizing_mode='stretch_width'),
+    title='Jobs Report')
 
 #Retail sales percent recovery        
 retail_sales=['RSHPCS','RSGASS','RSCCAS','RSSGHBMS','RSGMS','RSMSR','RSNSR','RSFSDP','RSMVPD','RSFHFS','RSEAS','RSBMGESD','RSDBS']
@@ -73,10 +102,12 @@ for i in retail_sales_chart.legend[0]._property_values['items']:
 
 retail_sales=['RSHPCS','RSGASS','RSCCAS','RSSGHBMS','RSGMS','RSMSR','RSNSR','RSFSDP','RSMVPD','RSFHFS','RSEAS','RSBMGESD','RSDBS']
 compare_industries=category_compare(retail_sales,'Retail Sales',nameoffset=22)
+retail_bar=bar_chart(retail_sales,cy,title='National Nonfarm Private Payroll for Select Sectors (ADP)',lstrip=22,rstrip=0)
+retail_bar_difference=bar_chart(retail_sales,cy,transformation='difference',transform_date='2020-02-01',title='Change in Retail Sales',lstrip=22,rstrip=0)
 
 sales_charts=Panel(child=layout([
         [retail_sales_chart,compare_industries,padding()],
-        
+        [retail_bar,retail_bar_difference,padding()]
         ],sizing_mode='stretch_width'),
     title='Retail Sales')
 
@@ -92,9 +123,9 @@ about_html="""
 """
 about=Panel(child=Div(text=about_html),title='About')
 
-#page=Tabs(tabs=[overall_trends,weekly_claims,sales_charts,ADP])
-page=Tabs(tabs=[overall_trends])
-show(page)
+page=Tabs(tabs=[overall_trends,sales_charts,weekly_claims,ADP,Jobs,about])
+#page=Tabs(tabs=[weekly_claims])
+#show(page)
 
 save(page,resources=None,filename=fileloc+'EconomicIndicators.html',title='Economic Dashboard')
 
@@ -142,29 +173,5 @@ show(chart(['PAYEMS','CANA','SACR906NA'],'2019-01-01',
            title="Change in employment",
            ))
 
-#Employment Charts
-paired_series={'UNRATENSA':'CASACR5URN',
-                 'IURNSA':'CAINSUREDUR',}
-charts=[]
-recessions=5
-for i in paired_series:
-    charts.append([historical_comparison(historical_data(i,recessions)),
-                   historical_comparison(historical_data(paired_series[i],recessions))
-                   ,Spacer(width=30, height=10, sizing_mode='fixed')])
-charts[0][0].y_range=charts[0][1].y_range
-charts[1][0].y_range=charts[1][1].y_range
-charts.append([
-                adder_chart('ICNSA',pua_data.groupby(by='Rptdate').sum()[['PUA IC']].rename(columns={'PUA IC':'value'}),recessions),
-                adder_chart('CAICLAIMS',pua_data[pua_data.State=='CA'][['Rptdate','PUA IC']].rename(columns={'PUA IC':'value'}),recessions),
-                Spacer(width=30, height=10, sizing_mode='fixed')
-                ])
-charts.append([historical_comparison(historical_data('LNU03025699',recessions)),
-              historical_comparison(historical_data('UEMP15T26',recessions)),
-              Spacer(width=30, height=10, sizing_mode='fixed')
-    ])
-show(layout(charts,sizing_mode='stretch_width'))
-
-
-show(Tabs(tabs=[sales_charts]))
 
 """

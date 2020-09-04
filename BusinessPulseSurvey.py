@@ -12,9 +12,11 @@ from bokeh.plotting import figure
 from bokeh.transform import dodge
 import math
 import datetime
+import config
 
-fileloc='C:\\Users\\Micha\\Documents\\GitHub\\EconomicDashboard\\'
+fileloc=config.fileloc
 filename=fileloc+'smallBusiness.csv'
+
 
 def naics_table():
     naics=(pd.read_excel('https://www.census.gov/eos/www/naics/2017NAICS/2017_NAICS_Structure.xlsx',skiprows=3,usecols="B:C",header=None,names=['NAICS','name'],dtype={'NAICS': str, 'name': str})).dropna()
