@@ -1,18 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jul 15 14:51:42 2020
-
-@author: Micha
+@author: Michael Champ
 """
 
 import pandas as pd
-from bokeh.io import show
-from bokeh.models import ColumnDataSource, NumeralTickFormatter, HoverTool
-from bokeh.plotting import figure
+from bokeh.models import ColumnDataSource, NumeralTickFormatter, HoverTool,FactorRange
+from bokeh.plotting import figure, show
 from bokeh.transform import dodge
+from bokeh.palettes import Category10, Category20
 import math
 import datetime
 import config
+import itertools
 
 fileloc=config.fileloc
 filename=fileloc+'smallBusiness.csv'
@@ -56,10 +55,9 @@ def merged_data(code_url,msa_data_url,state_data_url,date):
     return merged
 
 def compare_questions_locations(df,qa,locations):
+    df=df.copy()
     NAICS=['all']
-    
     measures=[qa[i] for i in qa]
-    df['qa']=df.questionID.astype('str')+'-'+df.answerID.astype('str')
     df['location'] = pd.Categorical(df['location'], locations)
     df['qa'] = pd.Categorical(df['qa'], list(qa))
     subset=df[(df.location.isin(locations))&(df.NAICS.isin(NAICS))&(df.qa.isin(list(qa)))]
@@ -91,12 +89,12 @@ def compare_questions_locations(df,qa,locations):
     p.legend.location = "top_left"
     p.legend.orientation = "horizontal"
     p.xaxis.major_label_orientation=math.pi/2.8
-    p.xaxis.major_label_text_font_size = "12pt"
+    #p.xaxis.major_label_text_font_size = "12pt"
     p.yaxis.formatter=NumeralTickFormatter(format="0%")
     return p
 
 #Build the data set
-def base_dataset(weeks):
+def business_pulse(weeks):
     df=pd.DataFrame()
     for i in range(0,weeks):
         print(i)
@@ -107,22 +105,107 @@ def base_dataset(weeks):
         state_data_url=f"https://portal.census.gov/pulse/data/downloads/{10+i}/national_state_sector_{start}_{end}.xls"
         code_url='https://portal.census.gov/pulse/data/downloads/codebook_2020_08_10.xlsx'
         df=df.append(merged_data(code_url,msa_data_url,state_data_url,dt.strftime('%Y-%m-%d')))
+    df['qa']=df.questionID.astype('str')+'-'+df.answerID.astype('str')
     df.NAICS=df.NAICS.str.rstrip(' ')
     return df.merge(naics_table(),how='left',on='NAICS')
         
-df=base_dataset(3)
+def qa_by_loc(df,qa:str,locations:list,**kwargs):
+    df=df[(df.qa==qa)&(df.location.isin(locations))&(df.NAICS=='all')]
+    p = figure(title=kwargs.get('title','Chart'), x_range=df.date.unique().tolist(), plot_width=200, plot_height=400,
+           tools="pan,wheel_zoom,reset,save",
+            active_scroll=None,
+            sizing_mode='stretch_width'
+            )
+    if len(locations)>10:
+        palette=Category20[20]
+    else:
+        palette=Category10[10]
+    colors = itertools.cycle(palette)
+    for location,color in zip(locations,colors):
+        source = ColumnDataSource(df[df.location==location])
+        p.line(x='date',
+               y='value',
+               source=source,
+               legend_label=location,
+               color=color,muted_color=color, muted_alpha=0.2
+            )
+    hover = HoverTool(tooltips =[
+         ('Location','@location'),
+         ('Question','@question'),
+         ('Answer','@answer'),
+         ('Value','@value{0.0%}'),
+         ])
+    p.legend.click_policy="mute"
+    p.add_tools(hover)
+    p.yaxis.formatter=NumeralTickFormatter(format="0%")
+    p.legend.location = "bottom_left"
+    return p
+
+def qa_for_loc(df,qa:dict,location:str,**kwargs):
+    df=df[(df.qa.isin(qa))&(df.location==location)&(df.NAICS=='all')].copy()
+    df['desc']=df['qa'].map(qa)
+    p = figure(title=kwargs.get('title','Chart'), x_range=df.date.unique().tolist(), plot_width=200, plot_height=400,
+           tools="pan,wheel_zoom,reset,save",
+            active_scroll=None,
+            sizing_mode='stretch_width'
+            )
+    if len(qa)>10:
+        palette=Category20[20]
+    else:
+        palette=Category10[10]
+    colors = itertools.cycle(palette)
+    for qai,color in zip(qa,colors):
+        source = ColumnDataSource(df[df.qa==qai])
+        p.line(x='date',
+               y='value',
+               source=source,
+               legend_label=qa[qai],
+               color=color,muted_color=color, muted_alpha=0.2
+            )
+    hover = HoverTool(tooltips =[
+         ('Description','@desc'),
+         ('Question','@question'),
+         ('Answer','@answer'),
+         ('Value','@value{0.0%}'),
+         ])
+    p.legend.click_policy="mute"
+    p.add_tools(hover)
+    p.yaxis.formatter=NumeralTickFormatter(format="0%")
+    p.legend.location = "bottom_left"
+    return p    
+
+def stacked_by_loc(df,qa:dict,locations:list,**kwargs):
+    desc=[qa[i] for i in qa]
+    qa_codes=[i for i in qa]
+    if len(qa)>10:
+        palette=Category20[20]
+    else:
+        palette=Category10[10]
+    dates=df.date.unique().tolist()
+    df=df[(df.qa.isin(qa_codes))&(df.location.isin(locations))&(df.NAICS=='all')].copy()
+    df['desc']=df['qa'].map(qa)
+    df['factor']=list(zip(df.location, df.date))
+    pivot=df.pivot(index='factor', columns='desc', values='value')
+    factors=[(x,y) for x in locations for y in dates]
+    source = ColumnDataSource(pivot)
+    p = figure(title=kwargs.get('title','Chart'),
+               x_range=FactorRange(*factors),
+               plot_width=200, plot_height=400,
+               sizing_mode='stretch_width',
+               tools="pan,wheel_zoom,reset,save",
+               tooltips="$name @$name{0.0%}",)
+    p.vbar_stack(desc, x='factor', width=0.9, alpha=0.5, color=palette[:len(qa)], source=source,
+                 legend_label=desc)
+    p.vbar_stack(desc, x='factor', width=0.9, alpha=0.5, color=palette[:len(qa)], source=source,
+             legend_label=desc)
+    p.xaxis.major_label_orientation=math.pi/2.2
+    p.legend.location = "top_left"
+    p.yaxis.formatter=NumeralTickFormatter(format="0%")
+
+    return p
+
     
-qa={'20-6':'business is closed',
-    '19-7':'expect to close in the next 6 months',
-    '6-1':'increased number of employees last week',
-    '6-2':'decreased number of employees last week',
-    '8-1':'increased hours paid last week',
-    '8-2':'decreased hours paid last week',
-    '7-1':'rehired employees last week'}
+    
 
-locations=['Sacramento-Roseville-Folsom, CA MSA','CA','National']
-p=compare_questions_locations(df[df.date=='2020-08-22'],qa,locations)
-show(p)
-
-p=compare_questions_locations(df[df.date=='2020-08-15'],qa,locations)
-show(p)
+#BusinessPulse=business_pulse(3)
+#p=compare_questions_locations(BusinessPulse[BusinessPulse.date=='2020-08-22'],qa,locations)

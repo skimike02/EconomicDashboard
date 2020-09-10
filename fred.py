@@ -1,27 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep  3 10:25:59 2020
-only pull data once. keep master data
-@author: Micha
+@author: Michael Champ
+To do:
+    rewrite functions to pass dataframes
+    add integration directly to BLS API
 """
 
 import json
 import requests as r
 import pandas as pd
 import itertools
-from bokeh.plotting import figure, show
-from bokeh.models import NumeralTickFormatter,ColumnDataSource,HoverTool, Range1d,Panel,Tabs,Div,LinearAxis
-from bokeh.layouts import layout,Spacer
+from bokeh.plotting import figure
+from bokeh.models import NumeralTickFormatter,ColumnDataSource,HoverTool
+from bokeh.layouts import Spacer
 from bokeh.palettes import Category10, Category20
 import datetime
 import numpy as np
 import config
 import math
 import time
-import datetime
-
-delay=2
-
 
 api_key=config.api_key
 
@@ -44,7 +41,7 @@ def master_data(seriess:list):
                 url_series=f'https://api.stlouisfed.org/fred/series?series_id={series}&api_key={api_key}&file_type=json'
                 payload=r.get(url_series)
                 if payload.status_code==429:
-                    time.sleep(60)
+                    time.sleep(120)
                     payload=r.get(url_series)
                 if payload.status_code!=200:
                     print("error retrieving "+url_series)
@@ -54,7 +51,7 @@ def master_data(seriess:list):
                 url_series_release=f'https://api.stlouisfed.org/fred/series/release?series_id={series}&api_key={api_key}&file_type=json'
                 payload=r.get(url_series_release)
                 if payload.status_code==429:
-                    time.sleep(60)
+                    time.sleep(120)
                     payload=r.get(url_series)
                 if payload.status_code!=200:
                     print("error retrieving "+url_series)
@@ -65,7 +62,7 @@ def master_data(seriess:list):
             url_series=f'https://api.stlouisfed.org/fred/series?series_id={series}&api_key={api_key}&file_type=json'
             payload=r.get(url_series)
             if payload.status_code==429:
-                time.sleep(60)
+                time.sleep(120)
                 payload=r.get(url_series)
             if payload.status_code!=200:
                 print("error retrieving"+url_series)
@@ -75,7 +72,7 @@ def master_data(seriess:list):
             url_series_release=f'https://api.stlouisfed.org/fred/series/release?series_id={series}&api_key={api_key}&file_type=json'
             payload=r.get(url_series_release)
             if payload.status_code==429:
-                time.sleep(60)
+                time.sleep(120)
                 payload=r.get(url_series)
             if payload.status_code!=200:
                 print("error retrieving"+url_series)
@@ -140,12 +137,34 @@ def observations(series:str,start:str,**kwargs):
     sticky_observations=sticky_observations.append(df)
     return sticky_observations[sticky_observations.date>=start].loc[series]
 
-def transform(df,*args, **kwargs):
-    date = kwargs.get('date', '1900-01-01')
-    reference_value=df[df.date>=date].value.iloc[0]
-    df['difference']=df['value']-reference_value
-    df['index']=df['value']/reference_value
+def bls_api(series:list,start,end):
+    global sticky_observations
+    sticky_observations.drop(labels=series, inplace=True,errors='ignore')
+    headers = {'Content-type': 'application/json'}
+    data = json.dumps({"seriesid": series,"startyear":start, "endyear":end})
+    print("fetching data from bls api...")
+    p = r.post('https://api.bls.gov/publicAPI/v1/timeseries/data/', data=data, headers=headers)
+    json_data = json.loads(p.text)
+    df=pd.DataFrame()
+    for i in json_data['Results']['series']:
+        tmp=pd.DataFrame()
+        tmp=pd.DataFrame.from_dict(i['data'])
+        tmp['series']=i['seriesID']
+        tmp['date']=pd.to_datetime(tmp.year+tmp.period.str[-2:]+'01',format='%Y%m%d')
+        tmp.set_index('series',inplace=True)
+        df=df.append(tmp)
+        df.drop(columns=['periodName','latest','footnotes','year','period'],inplace=True)
+        df['value'] = pd.to_numeric(df['value'],errors='coerce')
+    sticky_observations=sticky_observations.append(df)
     return df
+
+def transform(df,*args, **kwargs):
+    data=df.sort_values(by=['series','date']).copy()
+    date = kwargs.get('date', '1900-01-01')
+    reference_value=data[data.date>=date].value.iloc[0]
+    data['difference']=data['value']-reference_value
+    data['index']=data['value']/reference_value
+    return data
 
 def chart(series:list,start:str,**kwargs):
     mdata=master_data(series)
@@ -222,12 +241,6 @@ def bar_chart(series:list,start:str,**kwargs):
         units.append(mdata.loc[series_item].units)
     names=chart_data.drop(columns='datestring').columns.tolist()
     chart_data.set_index('datestring',inplace=True)
-    """
-    increases=[x for x in chart_data.drop(columns='datestring').columns.tolist() if x[-8:]=='increase']
-    increases.append('datestring')
-    decreases=[x for x in chart_data.drop(columns='datestring').columns.tolist() if x[-8:]=='decrease']
-    decreases.append('datestring')
-    """
     p = figure(title=kwargs.get('title','Chart'),x_range=chart_data.reset_index().datestring.tolist(),plot_width=200, plot_height=400,
        tools="pan,wheel_zoom,reset,save,hover",
        tooltips="$name @datestring: @$name{0,}",
@@ -235,18 +248,17 @@ def bar_chart(series:list,start:str,**kwargs):
        sizing_mode='stretch_width',
         )
     p.vbar_stack(names,
-                 x='datestring', 
-                 width=0.9,
-                 color=palette[0:len(names)],
-                 source=ColumnDataSource(chart_data.clip(lower=0).reset_index()) ,
-                 legend_label=names)
+            x='datestring', 
+            width=0.9,
+            color=palette[0:len(names)],
+            source=ColumnDataSource(chart_data.clip(lower=0).reset_index()) ,
+            legend_label=names)
     p.vbar_stack(names,
-             x='datestring', 
-             width=0.9,
-             color=palette[0:len(names)],
-             source=ColumnDataSource(chart_data.clip(upper=0).reset_index()) 
-             )
-
+            x='datestring', 
+            width=0.9,
+            color=palette[0:len(names)],
+            source=ColumnDataSource(chart_data.clip(upper=0).reset_index()) 
+            )
     p.yaxis.formatter=NumeralTickFormatter(format="0,")
     if transformation=='index':
         ylabel='Percent of '+transform_date+' value'
@@ -379,6 +391,39 @@ def category_compare(series:list,title:str,**kwargs):
     p.legend.location = "top_left"
     return(p)
 
+def bls_compare(series,categories,title,**kwargs):
+    metric=kwargs.get('metric', 'pct')
+    df=bls_api(series,2020,2020)
+    pct_change, change, month_change, month_pct_change=[],[],[],[]
+    for item in series:
+        data=transform(df[df.index==item],date='2020-02-01')
+        change.append(data.tail(1).iloc[0]['difference'])
+        pct_change.append(data.tail(1).iloc[0]['index']-1)
+        month_change.append(data.value.tail(1).iloc[0]-data.value.tail(2).head(1).iloc[0])
+        month_pct_change.append(data.value.tail(1).iloc[0]/data.value.tail(2).head(1).iloc[0]-1)
+    if metric=='pct':
+        sort_field = sorted(categories, key=lambda x: pct_change[categories.index(x)])
+        bar_field=pct_change
+        scatter_field=month_pct_change
+        tickformat="0%"
+    else:
+        sort_field = sorted(categories, key=lambda x: change[categories.index(x)])
+        bar_field=change
+        scatter_field=month_change
+        tickformat="0.0"
+    p = figure(x_range=sort_field, plot_height=700, title=title,
+               toolbar_location='right', tools="save")
+    p.vbar(x=categories, top=bar_field, width=0.9, legend_label='since Feb')
+    p.scatter(x=categories, y=scatter_field, color='red', legend_label=df.date.max().strftime("%b-%y"))
+    p.xaxis.major_label_orientation=math.pi/2.2
+    p.yaxis.formatter=NumeralTickFormatter(format=tickformat)
+    p.legend.location = "top_left"
+    return(p)
+
+   
+
+
 def padding():
     padding=Spacer(width=30, height=10, sizing_mode='fixed')
     return padding
+
