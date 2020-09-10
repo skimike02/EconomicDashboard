@@ -3,7 +3,7 @@
 @author: Michael Champ
 
 To do:
-    Employment by Industry (and BLS API integration)
+    pickle results to minimize data requests
     JOLTS
     Personal Income
 """
@@ -11,7 +11,7 @@ To do:
 import pandas as pd
 import math
 import datetime
-from bokeh.plotting import show, save
+from bokeh.plotting import save
 from bokeh.models import Panel,Tabs,Div
 from bokeh.layouts import layout
 from bs4 import BeautifulSoup as Soup
