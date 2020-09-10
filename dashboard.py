@@ -14,8 +14,7 @@ import datetime
 from bokeh.plotting import show, save
 from bokeh.models import Panel,Tabs,Div
 from bokeh.layouts import layout
-
-
+from bs4 import BeautifulSoup as Soup
 import config
 from fred import (bls_compare,chart, bar_chart, historical_comparison, historical_data, adder_chart,
                  category_compare,padding)
@@ -184,9 +183,54 @@ page=Tabs(tabs=[
                 ])
 #show(page)
 
-save(page,resources=None,filename=fileloc+'EconomicIndicators.html',title='Economic Dashboard')
+save(page,resources=None,filename=fileloc+'Economy.html',title='Economic Data')
 
 
+header=Soup("""
+<div class="header">
+  <h1 style: {width: 100%}>A selection of tools</h1> 
+  <ul class="navigation"> 
+    <li><a href="/index.html">Home</a></li> 
+    <li><a href="/CAISOData.html">CAISO Data</a></li> 
+    <li><a href="/CCAMap">CCA Service Territory</a></li>
+    <li><a href="COVID19.html">COVID-19 Data</a></li>
+    <li><a href="Economy.html">EconomicData</a></li>
+    <li><a href="https://teslaconnect.michaelchamp.com">TeslaConnect</a></li>
+  </ul> 
+  <link rel="icon" 
+      type="image/png" 
+      href="https://michaelchamp.com/assets/logo.png">
+ <link rel="stylesheet" href="styles.css">
+ </div>
+""",features='lxml')
+
+footer=Soup("""<div class="footer"> 
+  <p>&copy; 2020
+    <script>new Date().getFullYear()>2010&&document.write("-"+new Date().getFullYear());</script>
+    , Michael Champ</p>
+</div>""",features='lxml')
+
+tracker=Soup("""<div><!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-134772498-1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-134772498-1');
+</script></div>""",features='lxml')
+    
+#Insert script to add custom html header and footer
+htmlfile = open(fileloc+'COVID19.html', "r").read()
+soup=Soup(htmlfile,"lxml")
+
+soup.find('title').insert_after(header.body.div)
+soup.find('body').insert_after(footer.body.div)
+soup.find('title').insert_before(tracker.body.div)
+
+f = open(fileloc+'Economy.html', "w")
+f.write(str(soup).replace('©','&copy;'))
+f.close()
 
 """
 
