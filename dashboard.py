@@ -221,7 +221,7 @@ tracker=Soup("""<div><!-- Global site tag (gtag.js) - Google Analytics -->
 </script></div>""",features='lxml')
     
 #Insert script to add custom html header and footer
-htmlfile = open(fileloc+'COVID19.html', "r").read()
+htmlfile = open(fileloc+'Economy.html', "r").read()
 soup=Soup(htmlfile,"lxml")
 
 soup.find('title').insert_after(header.body.div)
