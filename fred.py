@@ -19,14 +19,22 @@ import numpy as np
 import config
 import math
 import time
+import pickle
 
 api_key=config.api_key
 
 recession_starts=['2020-02-01','2007-12-01','2001-03-01','1990-07-01','1981-07-01','1980-01-01','1973-11-01','1969-12-01',]
 
-sticky_master=pd.DataFrame()
-sticky_observations=pd.DataFrame(columns=['date','value','series'])
-sticky_observations.set_index('series',inplace=True)
+try:
+    sticky_master=pickle.load(open('master.p','rb'))
+except:
+    sticky_master=pd.DataFrame()
+
+try:
+    sticky_observations=pickle.load(open('observations.p','rb'))
+except:
+    sticky_observations=pd.DataFrame(columns=['date','value','series'])
+    sticky_observations.set_index('series',inplace=True)
 
 def master_data(seriess:list):
     global sticky_master
@@ -89,6 +97,7 @@ def master_data(seriess:list):
         df2.rename(columns={'id':'release_id','name':'release_name'},inplace=True)
         df=df.join(df2, rsuffix='_release')
         sticky_master=sticky_master.append(df)
+    pickle.dump(sticky_master,open('master.p','wb'))
     return sticky_master
 
 def observations(series:str,start:str,**kwargs):
@@ -135,6 +144,7 @@ def observations(series:str,start:str,**kwargs):
     df['series']=series
     df.set_index('series',inplace=True)
     sticky_observations=sticky_observations.append(df)
+    pickle.dump(sticky_observations,open('observations.p','wb'))
     return sticky_observations[sticky_observations.date>=start].loc[series]
 
 def bls_api(series:list,start,end):

@@ -3,7 +3,6 @@
 @author: Michael Champ
 
 To do:
-    pickle results to minimize data requests
     JOLTS
     Personal Income
 """
@@ -139,7 +138,7 @@ def retail_sales():
 
 #%% Business Pulse
 def bus_pul():
-    bus_pul=business_pulse(math.floor((datetime.datetime.now()-datetime.datetime.strptime('2020-08-15', '%Y-%m-%d')).days/7))
+    bus_pul=business_pulse(math.floor((datetime.datetime.now()-datetime.datetime.strptime('2020-08-13', '%Y-%m-%d')).days/7))
     qa={'20-6':'Business is closed',
     '19-7':'Expect to close in the next 6 months',
     '6-1':'Increased number of employees last week',
@@ -147,7 +146,7 @@ def bus_pul():
     '8-1':'Increased hours paid last week',
     '8-2':'Decreased hours paid last week',}
     locations=['Sacramento-Roseville-Folsom, CA MSA','CA','National']
-    current_status=compare_questions_locations(bus_pul[bus_pul.date=='2020-08-22'],qa,locations)
+    current_status=compare_questions_locations(bus_pul[bus_pul.date==bus_pul.date.max()],qa,locations)
     sacramento_status=qa_for_loc(bus_pul,qa,locations[0],title='Sacramento Responses')
     decreased_employment=qa_by_loc(bus_pul,'6-2',locations,title='Decreased Employment')
     decreased_hours=qa_by_loc(bus_pul,'8-2',locations,title='Decreased Hours')  
@@ -159,6 +158,17 @@ def bus_pul():
             ],sizing_mode='stretch_width'),
         title='Small Business Pulse')
     return business_pulse_panel
+
+#%% Miscellaneous
+def miscellaneous():
+    business_applications=chart(['BUSAPPWNSAUSYY','BUSAPPWNSACAYY','WBUSAPPWNSACAYY','HBUSAPPWNSACAYY'],'2020-01-01',title="Weekly Business Applications")
+    housing_starts=chart(['PERMIT','HOUST','SACR906BPPRIVSA'],'1990-01-01',title='Housing Starts')
+    miscellaneous=Panel(child=layout([
+        [business_applications,padding()],
+        [housing_starts,padding()],
+        ],sizing_mode='stretch_width'),
+    title='Misc')
+    return miscellaneous
 
 #%% About
 def about():
@@ -179,10 +189,13 @@ page=Tabs(tabs=[
                 adp_charts(),
                 jobs_report(),
                 bus_pul(),
+                miscellaneous(),
                 about()
                 ])
-#show(page)
-
+"""
+page=Tabs(tabs=[bus_pul()])
+show(page)
+"""
 save(page,resources=None,filename=fileloc+'Economy.html',title='Economic Data')
 
 
