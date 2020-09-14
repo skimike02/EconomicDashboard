@@ -3,6 +3,9 @@
 @author: Michael Champ
 
 To do:
+    mouseovers to category compare
+    TSA Data
+    Opentable Data
     JOLTS
     Personal Income
 """
@@ -10,12 +13,13 @@ To do:
 import pandas as pd
 import math
 import datetime
+import requests
 from bokeh.plotting import save
 from bokeh.models import Panel,Tabs,Div
 from bokeh.layouts import layout
 from bs4 import BeautifulSoup as Soup
 import config
-from fred import (bls_compare,chart, bar_chart, historical_comparison, historical_data, adder_chart,
+from fred import (bls_compare, chart,fred_chart, bar_chart, historical_comparison, historical_data, adder_chart,
                  category_compare,padding)
 from BusinessPulseSurvey import business_pulse,qa_for_loc,qa_by_loc,compare_questions_locations,stacked_by_loc
 
@@ -29,10 +33,10 @@ cy='2020-01-01'
 #%% Overall Trends
 def overall_trends():
     series=['RSAFS','IPMAN','PAYEMS','DGORDER']
-    national_trends=chart(series,'2019-01-01',transformation='index',transform_date='2020-02-01',title='Employment, Manufacturing, and Sales')
-    employment=chart(['PAYEMS'],'2000-01-01',title='Employment')
+    national_trends=fred_chart(series,'2019-01-01',transformation='index',transform_date='2020-02-01',title='Employment, Manufacturing, and Sales')
+    employment=fred_chart(['PAYEMS'],'2000-01-01',title='Employment')
     employment.legend.location='top_left'
-    unemployment=chart(['UNRATENSA','CAURN','CASACR5URN'],'2000-01-01')
+    unemployment=fred_chart(['UNRATENSA','CAURN','CASACR5URN'],'2000-01-01',title='Unemployment')
     unemployment.legend.location='top_left'
     
     overall_trends=Panel(child=layout([
@@ -66,10 +70,10 @@ def adp_charts():
     adp_sectors=['NPPMNF','NPPCON','NPPTTU','NPPBUS','NPPFIN']
     adp_sizes=['NPPTS1','NPPTS2','NPPTM','NPPTL1','NPPTL2']
     
-    sector_index=chart(adp_sectors,cy,transformation='index',transform_date='2020-02-01',title='National Nonfarm Private Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
+    sector_index=fred_chart(adp_sectors,cy,transformation='index',transform_date='2020-02-01',title='National Nonfarm Private Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
     sector_index_bar=bar_chart(adp_sectors,cy,title='National Nonfarm Private Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
     sector_difference_bar=bar_chart(adp_sectors,cy,transformation='difference',transform_date='2020-02-01',title='Change in Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
-    size_index=chart(adp_sizes,cy,transformation='index',transform_date='2020-02-01',title='National Nonfarm Private Payroll by Business Size (ADP)',lstrip=16)
+    size_index=fred_chart(adp_sizes,cy,transformation='index',transform_date='2020-02-01',title='National Nonfarm Private Payroll by Business Size (ADP)',lstrip=16)
     size_index_bar=bar_chart(adp_sizes,cy,title='National Nonfarm Private Payroll by Business Size (ADP)',lstrip=16)
     size_difference_bar=bar_chart(adp_sizes,cy,transformation='difference',transform_date='2020-02-01',title='Change in Payroll by Business Size (ADP)',lstrip=16)
     copyright_note=Div(text="<p>Copyright Automatic Data Processing, Inc. Retrieved from FRED, Federal Reserve Bank of St. Louis</p>")
@@ -120,7 +124,7 @@ def jobs_report():
 #%% Retail sales percent recovery        
 def retail_sales():
     retail_sales=['RSHPCS','RSGASS','RSCCAS','RSSGHBMS','RSGMS','RSMSR','RSNSR','RSFSDP','RSMVPD','RSFHFS','RSEAS','RSBMGESD','RSDBS']
-    retail_sales_chart=chart(retail_sales,'2019-01-01',transformation='index',transform_date='2020-02-01',title="Change in retail sales")
+    retail_sales_chart=fred_chart(retail_sales,'2019-01-01',transformation='index',transform_date='2020-02-01',title="Change in retail sales")
     for i in retail_sales_chart.legend[0]._property_values['items']:
         i._property_values['label']['value']=i._property_values['label']['value'][22:]
     
@@ -161,10 +165,15 @@ def bus_pul():
 
 #%% Miscellaneous
 def miscellaneous():
-    business_applications=chart(['BUSAPPWNSAUSYY','BUSAPPWNSACAYY','WBUSAPPWNSACAYY','HBUSAPPWNSACAYY'],'2020-01-01',title="Weekly Business Applications")
-    housing_starts=chart(['PERMIT','HOUST','SACR906BPPRIVSA'],'1990-01-01',title='Housing Starts')
+    business_applications=fred_chart(['BUSAPPWNSAUSYY','BUSAPPWNSACAYY','WBUSAPPWNSACAYY','HBUSAPPWNSACAYY'],'2020-01-01',title="Weekly Business Applications")
+    url='https://www.tsa.gov/coronavirus/passenger-throughput'
+    tsa=pd.read_html(requests.get(url).text,header=0)[0].dropna()
+    tsa['Date']=pd.to_datetime(tsa['Date'], format='%m/%d/%Y')
+    tsa['YoY']=tsa['Total Traveler Throughput']/tsa['Total Traveler Throughput  (1 Year Ago - Same Weekday)']
+    tsa_chart=chart(tsa[['Date','YoY']],date='Date',title='Year over Year change in TSA checkpoint travelers',units='percent')
+    housing_starts=fred_chart(['PERMIT','HOUST','SACR906BPPRIVSA'],'1990-01-01',title='Housing Starts')
     miscellaneous=Panel(child=layout([
-        [business_applications,padding()],
+        [business_applications,tsa_chart,padding()],
         [housing_starts,padding()],
         ],sizing_mode='stretch_width'),
     title='Misc')
@@ -178,6 +187,7 @@ def about():
     <p>PUA data pulled from the <a href="https://oui.doleta.gov/unemploy/docs/weekly_pandemic_claims.xlsx">US Department of Labor</a></p>
     <p>Business Pulse Survey Data pulled from <a href="https://www.census.gov/data/experimental-data-products/small-business-pulse-survey.html">US Census Bureau</a></p>
     <p>Household Pulse Survey Data pulled from <a href="https://www.census.gov/programs-surveys/household-pulse-survey/data.html">US Census Bureau</a></p>
+    <p>TSA Data pulled from <a href="https://www.tsa.gov/coronavirus/passenger-throughput">TSA website</a></p>
     """
     about=Panel(child=Div(text=about_html),title='About')
     return about

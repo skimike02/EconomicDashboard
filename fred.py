@@ -176,7 +176,7 @@ def transform(df,*args, **kwargs):
     data['index']=data['value']/reference_value
     return data
 
-def chart(series:list,start:str,**kwargs):
+def fred_chart(series:list,start:str,**kwargs):
     mdata=master_data(series)
     offsets=kwargs.get('offsets',[0 for x in range(len(series))])
     transformation=kwargs.get('transformation','value')
@@ -226,6 +226,49 @@ def chart(series:list,start:str,**kwargs):
     if transformation=='value':
         ylabel=repr(set(units)).replace('\'','').replace('{','').replace('}','')
     p.yaxis.axis_label=ylabel
+    p.legend.location = "bottom_left"
+    return p
+
+def chart(df,**kwargs):
+    units=kwargs.get('units','number')
+    date=kwargs.get('date','date')
+    hover_formatter='{0,}'
+    yaxis_formatter="0,"
+    if units=='percent':
+        hover_formatter='{0.0%}'
+        yaxis_formatter="0%"
+    if (len(df.columns)-1)>10:
+        palette=Category20[20]
+    else:
+        palette=Category10[10]
+    colors = itertools.cycle(palette)
+    p = figure(title=kwargs.get('title','Chart'), x_axis_type='datetime', plot_width=200, plot_height=400,
+           tools="pan,wheel_zoom,reset,save",
+            active_scroll=None,
+            sizing_mode='stretch_width'
+            )
+    for series,color in zip(df.columns.drop(date).tolist(),colors):
+        df2=df[[date,series]].rename(columns={series:'value'})
+        df2['series']=series
+        df2['datestring']=df[date].dt.strftime('%m/%d/%Y')
+        source = ColumnDataSource(df2)
+        p.line(x=date,
+               y='value',
+               source=source,
+               legend_label=series,
+               color=color,muted_color=color, muted_alpha=0.2
+            )
+        if ((df2.value.max()<100)&(units!='percent')):
+            hover_formatter='{0.0}'
+    hover = HoverTool(tooltips =[
+         ('Measure','@series'),
+         ('Date','@datestring'),
+         ('Value','@{value}'+hover_formatter),
+         ])
+    p.legend.click_policy="mute"
+    p.add_tools(hover)
+    p.yaxis.formatter=NumeralTickFormatter(format=yaxis_formatter)
+    p.yaxis.axis_label=units
     p.legend.location = "bottom_left"
     return p
 
