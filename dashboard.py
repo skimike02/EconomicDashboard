@@ -26,6 +26,7 @@ from fred import (bls_compare, chart,fred_chart, bar_chart, historical_compariso
                  category_compare,padding)
 from BusinessPulseSurvey import business_pulse,qa_for_loc,qa_by_loc,compare_questions_locations,stacked_by_loc
 
+dir_path = os.path.dirname(os.path.abspath(__file__))
 
 if not os.path.exists(config.log_dir):
     os.makedirs(config.log_dir)
@@ -241,7 +242,7 @@ print("saving file to "+fileloc+'COVID19.html')
 output_file(fileloc+'Economy.html')
 templateLoader = jinja2.FileSystemLoader(searchpath="./")
 templateEnv = jinja2.Environment(loader=templateLoader)
-TEMPLATE_FILE = "template.html"
+TEMPLATE_FILE = os.path.join(dir_path,"template.html")
 with open(TEMPLATE_FILE) as file_:
     template=jinja2.Template(file_.read())
 save(page,title='Economic Data',template=template)
