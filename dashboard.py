@@ -242,7 +242,8 @@ output_file(fileloc+'Economy.html')
 templateLoader = jinja2.FileSystemLoader(searchpath="./")
 templateEnv = jinja2.Environment(loader=templateLoader)
 TEMPLATE_FILE = "template.html"
-template = templateEnv.get_template(TEMPLATE_FILE)
+with open(TEMPLATE_FILE) as file_:
+    template=jinja2.Template(file_.read())
 save(page,title='Economic Data',template=template)
 logging.info("%s Economic Dashboard Update Complete", datetime.datetime.now())
 
