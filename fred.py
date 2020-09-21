@@ -49,7 +49,7 @@ def master_data(seriess:list):
                 url_series=f'https://api.stlouisfed.org/fred/series?series_id={series}&api_key={api_key}&file_type=json'
                 payload=r.get(url_series)
                 if payload.status_code==429:
-                    time.sleep(120)
+                    time.sleep(150)
                     payload=r.get(url_series)
                 if payload.status_code!=200:
                     print("error retrieving "+url_series)
@@ -59,18 +59,18 @@ def master_data(seriess:list):
                 url_series_release=f'https://api.stlouisfed.org/fred/series/release?series_id={series}&api_key={api_key}&file_type=json'
                 payload=r.get(url_series_release)
                 if payload.status_code==429:
-                    time.sleep(120)
+                    time.sleep(150)
                     payload=r.get(url_series)
                 if payload.status_code!=200:
                     print("error retrieving "+url_series)
-                    print("response: "+payload.content)
+                    print("response: "+json.loads(payload.content))
                 release_dict[series]=json.loads(payload.content)['releases'][0]
                 print("updated master data for "+series)
         else:             
             url_series=f'https://api.stlouisfed.org/fred/series?series_id={series}&api_key={api_key}&file_type=json'
             payload=r.get(url_series)
             if payload.status_code==429:
-                time.sleep(120)
+                time.sleep(150)
                 payload=r.get(url_series)
             if payload.status_code!=200:
                 print("error retrieving"+url_series)
@@ -80,13 +80,17 @@ def master_data(seriess:list):
             url_series_release=f'https://api.stlouisfed.org/fred/series/release?series_id={series}&api_key={api_key}&file_type=json'
             payload=r.get(url_series_release)
             if payload.status_code==429:
-                time.sleep(120)
+                time.sleep(150)
                 payload=r.get(url_series)
             if payload.status_code!=200:
                 print("error retrieving"+url_series)
-                print("response: "+payload.content)
-            release_dict[series]=json.loads(payload.content)['releases'][0]
-            print("loaded master data for "+series)
+                print("response: "+json.loads(payload.content))
+            try:
+                release_dict[series]=json.loads(payload.content)['releases'][0]
+                print("loaded master data for "+series)
+            except:
+                print("error reading json")
+                print(json.loads(payload.content))
     sticky_master.drop(labels=series_dict.keys(), inplace=True,errors='ignore')
     if len(series_dict)>=1:
         df=pd.DataFrame.from_dict(series_dict,orient='index')
@@ -117,7 +121,7 @@ def observations(series:str,start:str,**kwargs):
                 payload=r.get(obs_url)
                 status=payload.status_code
                 if status==429:
-                    time.sleep(60)
+                    time.sleep(150)
                     payload=r.get(obs_url)
             except:
                 print("failure to reach website")          
@@ -128,7 +132,7 @@ def observations(series:str,start:str,**kwargs):
             payload=r.get(obs_url)
             status=payload.status_code
             if status==429:
-                time.sleep(60)
+                time.sleep(150)
                 payload=r.get(obs_url)
         except:
             print("failure to reach website")

@@ -211,9 +211,13 @@ def about():
     <p>Data from <a href="https://fred.stlouisfed.org/docs/api/fred/">FRED® API</a> unless otherwise noted below. This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis.</p>
     <p>PUA data pulled from the <a href="https://oui.doleta.gov/unemploy/docs/weekly_pandemic_claims.xlsx">US Department of Labor</a></p>
     <p>Business Pulse Survey Data pulled from <a href="https://www.census.gov/data/experimental-data-products/small-business-pulse-survey.html">US Census Bureau</a></p>
-    <p>Household Pulse Survey Data pulled from <a href="https://www.census.gov/programs-surveys/household-pulse-survey/data.html">US Census Bureau</a></p>
     <p>TSA Data pulled from <a href="https://www.tsa.gov/coronavirus/passenger-throughput">TSA website</a></p>
+    <p><b>Other Resources:</b></p>
+    <p><a href="https://tracktherecovery.org/">Track the Recovery</a></p>
+    <p><a href="https://markets.jpmorgan.com/research/open/latest/publication/9002054">JP Morgan Credit Card Spending Tracker</a></p>
     """
+    #    <p>Household Pulse Survey Data pulled from <a href="https://www.census.gov/programs-surveys/household-pulse-survey/data.html">US Census Bureau</a></p>
+
     about=Panel(child=Div(text=about_html),title='About')
     return about
 
