@@ -439,10 +439,22 @@ def category_compare(series:list,title:str,**kwargs):
         bar_field=change
         scatter_field=month_change
         tickformat="0.0"
+    source=ColumnDataSource(data=dict(
+        titles=categories,
+        bar=bar_field,
+        scatter=scatter_field
+        ))
     p = figure(x_range=sort_field, plot_height=700, title=title,
                toolbar_location='right', tools="save")
-    p.vbar(x=categories, top=bar_field, width=0.9, legend_label='since Feb')
-    p.scatter(x=categories, y=scatter_field, color='red', legend_label=masterdata.observation_end.max())
+    p.vbar(x='titles', top='bar', width=0.9, legend_label='since Feb',source=source)
+    p.scatter(x='titles', y='scatter', color='red', legend_label=masterdata.observation_end.max(),source=source)
+    hover = HoverTool(tooltips =[
+        ('Recession','@titles'),
+        ('Since February','@bar{.0%F}'),
+        ('Since '+masterdata.observation_end.max(),'@scatter{0.0%}'),
+        ],
+        formatters={'@date': 'datetime'})
+    p.add_tools(hover)
     p.xaxis.major_label_orientation=math.pi/2.2
     p.yaxis.formatter=NumeralTickFormatter(format=tickformat)
     p.legend.location = "top_left"

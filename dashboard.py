@@ -79,7 +79,6 @@ def weekly_claims():
     logging.info('%s Weekly Claims Completed', datetime.datetime.now())
     return weekly_claims
 
-
 #%% ADP Charts
 def adp_charts():
     logging.info('%s ADP Charts Started', datetime.datetime.now())
@@ -236,9 +235,9 @@ page=Tabs(tabs=[
 page=Tabs(tabs=[bus_pul()])
 show(page)
 """
-logging.info("%s saving file to "+fileloc+'COVID19.html', datetime.datetime.now())
+logging.info("%s saving file to "+fileloc+'Economy.html', datetime.datetime.now())
 
-print("saving file to "+fileloc+'COVID19.html')
+print("saving file to "+fileloc+'Economy.html')
 output_file(fileloc+'Economy.html')
 templateLoader = jinja2.FileSystemLoader(searchpath="./")
 templateEnv = jinja2.Environment(loader=templateLoader)
