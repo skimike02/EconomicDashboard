@@ -447,11 +447,12 @@ def category_compare(series:list,title:str,**kwargs):
     p = figure(x_range=sort_field, plot_height=700, title=title,
                toolbar_location='right', tools="save")
     p.vbar(x='titles', top='bar', width=0.9, legend_label='since Feb',source=source)
-    p.scatter(x='titles', y='scatter', color='red', legend_label=masterdata.observation_end.max(),source=source)
+    data_through=datetime.datetime.strptime(masterdata.observation_end.max(), '%Y-%m-%d').strftime('%b-%Y')
+    p.scatter(x='titles', y='scatter', color='red', legend_label=data_through,source=source)
     hover = HoverTool(tooltips =[
         ('Recession','@titles'),
-        ('Since February','@bar{.0%F}'),
-        ('Since '+masterdata.observation_end.max(),'@scatter{0.0%}'),
+        ('Since February','@bar{0.0%}'),
+        (data_through,'@scatter{0.0%}'),
         ],
         formatters={'@date': 'datetime'})
     p.add_tools(hover)
