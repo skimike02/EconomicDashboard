@@ -20,6 +20,7 @@ import config
 import math
 import time
 import pickle
+import logging
 
 api_key=config.api_key
 
@@ -54,6 +55,8 @@ def master_data(seriess:list):
                 if payload.status_code!=200:
                     print("error retrieving "+url_series)
                     print("response: "+payload.content)
+                    logging.warn(datetime.datetime.now()+" error retrieving "+url_series)
+                    logging.warn(datetime.datetime.now()+" response: "+payload.content)                    
                 series_dict[series]=json.loads(payload.content)['seriess'][0]
                 series_dict[series]['timestamp']=datetime.datetime.now()
                 url_series_release=f'https://api.stlouisfed.org/fred/series/release?series_id={series}&api_key={api_key}&file_type=json'
@@ -64,7 +67,11 @@ def master_data(seriess:list):
                 if payload.status_code!=200:
                     print("error retrieving "+url_series)
                     print("response: "+json.loads(payload.content))
-                release_dict[series]=json.loads(payload.content)['releases'][0]
+                try:
+                    release_dict[series]=json.loads(payload.content)['releases'][0]
+                except:
+                    print("no releases in data: "+json.loads(payload.content))
+                    logging.warn("no releases in data: "+json.loads(payload.content))
                 print("updated master data for "+series)
         else:             
             url_series=f'https://api.stlouisfed.org/fred/series?series_id={series}&api_key={api_key}&file_type=json'
