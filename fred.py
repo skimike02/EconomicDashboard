@@ -288,6 +288,8 @@ def bar_chart(series:list,start:str,**kwargs):
     offsets=kwargs.get('offsets',[0 for x in range(len(series))])
     transformation=kwargs.get('transformation','value')
     transform_date=kwargs.get('transform_date',start)
+    date_format=kwargs.get('date_format',"%b-%y")
+    legend_loc=kwargs.get('legend',"bottom_left")
     if len(series)>10:
         palette=Category20[20]
     else:
@@ -298,31 +300,47 @@ def bar_chart(series:list,start:str,**kwargs):
         df=transform(observations(series_item,start),date=transform_date)
         df['date']=df.date+datetime.timedelta(days=offset)
         name=mdata.loc[series_item].series_name[kwargs.get('lstrip', 0):len(mdata.loc[series_item].series_name)-kwargs.get('rstrip', 0)]
-        df['datestring']=df.date.dt.strftime("%b-%y")
+        df['datestring']=df.date.dt.strftime(date_format)
         df.rename(columns={transformation:name},inplace=True)
         df=df[['datestring',name]].copy()
         chart_data=chart_data.merge(df,how='outer',on='datestring',copy=True)
         units.append(mdata.loc[series_item].units)
     names=chart_data.drop(columns='datestring').columns.tolist()
+    chart_data['net']=chart_data.drop('datestring', 1).sum(axis=1).rename('sum')
     chart_data.set_index('datestring',inplace=True)
     p = figure(title=kwargs.get('title','Chart'),x_range=chart_data.reset_index().datestring.tolist(),plot_width=200, plot_height=400,
-       tools="pan,wheel_zoom,reset,save,hover",
+       tools="pan,wheel_zoom,reset,save",
        tooltips="$name @datestring: @$name{0,}",
        active_scroll=None,
        sizing_mode='stretch_width',
         )
-    p.vbar_stack(names,
+    positive=p.vbar_stack(names,
             x='datestring', 
             width=0.9,
             color=palette[0:len(names)],
-            source=ColumnDataSource(chart_data.clip(lower=0).reset_index()) ,
-            legend_label=names)
-    p.vbar_stack(names,
+            source=ColumnDataSource(chart_data.clip(lower=0).reset_index()),
+            legend_label=names
+            )
+    negative=p.vbar_stack(names,
             x='datestring', 
             width=0.9,
             color=palette[0:len(names)],
             source=ColumnDataSource(chart_data.clip(upper=0).reset_index()) 
             )
+    hover = HoverTool(tooltips ="$name @datestring: @$name{0,}",renderers=positive)
+    p.add_tools(hover)
+    hover = HoverTool(tooltips ="$name @datestring: @$name{0,}",renderers=negative)
+    p.add_tools(hover)
+    if kwargs.get('net',False)==True:
+        line_r=p.line(x='datestring',
+               y='net',
+               source=ColumnDataSource(chart_data),
+               color='black',
+               width=2,
+               legend_label='Net'
+               )
+        hover = HoverTool(tooltips ="Net: @net{0,}",renderers=[line_r])
+        p.add_tools(hover)
     p.yaxis.formatter=NumeralTickFormatter(format="0,")
     if transformation=='index':
         ylabel='Percent of '+transform_date+' value'
@@ -332,7 +350,10 @@ def bar_chart(series:list,start:str,**kwargs):
     if transformation=='value':
         ylabel=repr(set(units)).replace('\'','').replace('{','').replace('}','')
     p.yaxis.axis_label=ylabel
-    p.legend.location = "bottom_left"
+    if legend_loc!=False:
+        p.legend.location = legend_loc
+    else:
+        p.legend.items=[]
     return p
 
 

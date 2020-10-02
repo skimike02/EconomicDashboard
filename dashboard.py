@@ -41,12 +41,13 @@ fileloc=config.fileloc
 
 y2k='2000-01-01'
 cy='2020-01-01'
+rs='2020-02-01' #Recession start date
 
 #%% Overall Trends
 def overall_trends():
     logging.info('%s Overall Trends Started', datetime.datetime.now())
     series=['RSAFS','IPMAN','PAYEMS','DGORDER']
-    national_trends=fred_chart(series,'2019-01-01',transformation='index',transform_date='2020-02-01',title='Employment, Manufacturing, and Sales')
+    national_trends=fred_chart(series,'2019-01-01',transformation='index',transform_date=rs,title='Employment, Manufacturing, and Sales')
     employment=fred_chart(['PAYEMS'],'2000-01-01',title='Employment')
     employment.legend.location='top_left'
     unemployment=fred_chart(['UNRATENSA','CAURN','CASACR5URN'],'2000-01-01',title='Unemployment')
@@ -86,12 +87,12 @@ def adp_charts():
     adp_sectors=['NPPMNF','NPPCON','NPPTTU','NPPBUS','NPPFIN']
     adp_sizes=['NPPTS1','NPPTS2','NPPTM','NPPTL1','NPPTL2']
     
-    sector_index=fred_chart(adp_sectors,cy,transformation='index',transform_date='2020-02-01',title='National Nonfarm Private Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
+    sector_index=fred_chart(adp_sectors,cy,transformation='index',transform_date=rs,title='National Nonfarm Private Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
     sector_index_bar=bar_chart(adp_sectors,cy,title='National Nonfarm Private Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
-    sector_difference_bar=bar_chart(adp_sectors,cy,transformation='difference',transform_date='2020-02-01',title='Change in Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
-    size_index=fred_chart(adp_sizes,cy,transformation='index',transform_date='2020-02-01',title='National Nonfarm Private Payroll by Business Size (ADP)',lstrip=16)
+    sector_difference_bar=bar_chart(adp_sectors,cy,transformation='difference',transform_date=rs,title='Change in Payroll for Select Sectors (ADP)',lstrip=16,rstrip=19)
+    size_index=fred_chart(adp_sizes,cy,transformation='index',transform_date=rs,title='National Nonfarm Private Payroll by Business Size (ADP)',lstrip=16)
     size_index_bar=bar_chart(adp_sizes,cy,title='National Nonfarm Private Payroll by Business Size (ADP)',lstrip=16)
-    size_difference_bar=bar_chart(adp_sizes,cy,transformation='difference',transform_date='2020-02-01',title='Change in Payroll by Business Size (ADP)',lstrip=16)
+    size_difference_bar=bar_chart(adp_sizes,cy,transformation='difference',transform_date=rs,title='Change in Payroll by Business Size (ADP)',lstrip=16)
     copyright_note=Div(text="<p>Copyright Automatic Data Processing, Inc. Retrieved from FRED, Federal Reserve Bank of St. Louis</p>")
     
     adp_charts=Panel(child=layout([
@@ -144,15 +145,14 @@ def jobs_report():
 def retail_sales():
     logging.info('%s Retail Sales Started', datetime.datetime.now())
     retail_sales=['RSHPCS','RSGASS','RSCCAS','RSSGHBMS','RSGMS','RSMSR','RSNSR','RSFSDP','RSMVPD','RSFHFS','RSEAS','RSBMGESD','RSDBS']
-    retail_sales_chart=fred_chart(retail_sales,'2019-01-01',transformation='index',transform_date='2020-02-01',title="Change in retail sales")
+    retail_sales_chart=fred_chart(retail_sales,'2019-01-01',transformation='index',transform_date=rs,title="Change in retail sales")
     for i in retail_sales_chart.legend[0]._property_values['items']:
         i._property_values['label']['value']=i._property_values['label']['value'][22:]
     
     retail_sales=['RSHPCS','RSGASS','RSCCAS','RSSGHBMS','RSGMS','RSMSR','RSNSR','RSFSDP','RSMVPD','RSFHFS','RSEAS','RSBMGESD','RSDBS']
     compare_industries=category_compare(retail_sales,'Retail Sales',nameoffset=22)
-    retail_bar=bar_chart(retail_sales,cy,title='Retail Sales by Sector',lstrip=22,rstrip=0)
-    retail_bar_difference=bar_chart(retail_sales,cy,transformation='difference',transform_date='2020-02-01',title='Change in Retail Sales',lstrip=22,rstrip=0)
-    
+    retail_bar=bar_chart(retail_sales,cy,title='Retail Sales by Sector',lstrip=22,rstrip=0,legend=False)
+    retail_bar_difference=bar_chart(retail_sales,cy,transformation='difference',transform_date=rs,title='Change in Retail Sales',lstrip=22,rstrip=0,legend=False,net=True)
     retail_sales=Panel(child=layout([
             [retail_sales_chart,compare_industries,padding()],
             [retail_bar,retail_bar_difference,padding()]
@@ -160,6 +160,31 @@ def retail_sales():
         title='Retail Sales')
     logging.info('%s Retail Sales Completed', datetime.datetime.now())
     return retail_sales
+
+#%% Personal Income and Expenses
+def personal_income():
+    logging.info('%s Personal Income Started', datetime.datetime.now())
+    income=['W209RC1','PCTR','PIROA','A048RC1','A041RC1']
+    income_change=bar_chart(income,cy,transformation='difference',transform_date=rs,title='Change in Income',net=True,legend='top_left')
+    income_change.legend[0].items[3].label['value']='Rental income'
+    income_change.legend[0].items[4].label['value']='''Proprietors' income'''
+    #contra_income=['A061RC1','W055RC1']
+    expenses=['PCEDG','PCEND','PCES','B069RC1','W211RC1']
+    expenses_change=bar_chart(expenses,cy,transformation='difference',transform_date=rs,title='Change in Expenses',net=True)
+    for i in range(0,3):
+        expenses_change.legend[0].items[i].label['value']=expenses_change.legend[0].items[i].label['value'][35:]
+    for i in range(3,5):
+        expenses_change.legend[0].items[i].label['value']=expenses_change.legend[0].items[i].label['value'][9:].title()
+    high_level=['W209RC1','DSPI','A068RC1','PMSAVE']
+    high_level_chart=fred_chart(high_level,cy,title='Income, Expenditure, and Saving')
+    personal_income_charts=Panel(child=layout([
+            [income_change,expenses_change,padding()],
+            [high_level_chart,padding()]
+            ],sizing_mode='stretch_width'),
+        title='Personal Income and Expenses')
+    logging.info('%s Personal Income Completed', datetime.datetime.now())
+    return personal_income_charts
+
 
 #%% Business Pulse
 def bus_pul():
@@ -224,6 +249,7 @@ def about():
 page=Tabs(tabs=[
                 overall_trends(),
                 retail_sales(),
+                personal_income(),
                 weekly_claims(),
                 adp_charts(),
                 jobs_report(),
@@ -252,7 +278,7 @@ logging.info("%s Economic Dashboard Update Complete", datetime.datetime.now())
 
 #Compensation and UI change
 compensation_and_ui=['W209RC1','W825RC1']
-p=chart(compensation_and_ui,cy,transformation='difference',transform_date='2020-02-01')
+p=chart(compensation_and_ui,cy,transformation='difference',transform_date=rs)
 p.renderers[0].data_source.data['difference']=p.renderers[0].data_source.data['difference']*-1
 p.legend[0]._property_values['items'][0]._property_values['label']['value']='Loss in Compensation since Feb 2020'
 p.legend[0]._property_values['items'][1]._property_values['label']['value']='Increase in Unemployment Insurance since Feb 2020'
@@ -261,13 +287,13 @@ show(p)
 
 #Personal Income and Spending
 personal_income=['PI','PCE','A063RC1']
-p=chart(personal_income,cy,transformation='difference',transform_date='2020-02-01')
+p=chart(personal_income,cy,transformation='difference',transform_date=rs)
 
 pi=observations('PI',cy)
 transfers=observations('A063RC1',cy)
 tmp=pi.join(transfers,rsuffix='transfers')
 tmp['value']=tmp['value']-tmp['valuetransfers']
-df=transform(tmp,date='2020-02-01')
+df=transform(tmp,date=rs)
 df['name']='Personal Income excluding transfers'
 df['datestring']=df.date.dt.strftime("%Y-%m-%d")
 
