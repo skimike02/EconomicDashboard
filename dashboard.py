@@ -249,15 +249,15 @@ def about():
     return about
 
 page=Tabs(tabs=[
-#                overall_trends(),
-#                retail_sales(),
-#                personal_income(),
-#                weekly_claims(),
-#                adp_charts(),
+                overall_trends(),
+                retail_sales(),
+                personal_income(),
+                weekly_claims(),
+                adp_charts(),
                 jobs_report(),
- #               bus_pul(),
- #               miscellaneous(),
- #               about()
+                bus_pul(),
+                miscellaneous(),
+                about()
                 ])
 """
 page=Tabs(tabs=[bus_pul()])
