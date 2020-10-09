@@ -116,7 +116,9 @@ def jobs_report():
     national_jobs.y_range=state_jobs.y_range
     local_jobs.y_range=state_jobs.y_range
     permanent_unemployment=historical_comparison(historical_data('LNU03025699',recessions))
-    long_term_unemployment=historical_comparison(historical_data('UEMP15T26',recessions))
+    mid_term_unemployment=historical_comparison(historical_data('UEMP15T26',recessions))
+    mid_term_unemployment.y_range=permanent_unemployment.y_range
+    long_term_unemployment=historical_comparison(historical_data('UEMP27OV',recessions))
     long_term_unemployment.y_range=permanent_unemployment.y_range
     occupations=['LNU02032201','LNU02032204','LNU02032205','LNU02032208','LNU02032212']
     employment_by_occupation=category_compare(occupations,'Change in Employment by Occupation',nameoffset=19)
@@ -129,12 +131,12 @@ def jobs_report():
                     'Leisure and hospitality','Other services','Public administration']
     employment_by_industry=bls_compare(industries,industry_names,'Change in Employment by Industry')
     employment_by_industry.legend.location='bottom_right'
+    labor_force_categories=['CLF16OV','LNS11000002','LNS11000001']
+    labor_force=fred_chart(labor_force_categories,cy,transformation='index',transform_date=rs,title='Labor Force Level')
     jobs_report=Panel(child=layout([
         [national_jobs,state_jobs,local_jobs,padding()],
-        [permanent_unemployment,long_term_unemployment,padding()],
-        [employment_by_occupation,
-         employment_by_industry,
-         padding()]
+        [permanent_unemployment,mid_term_unemployment,long_term_unemployment,padding()],
+        [employment_by_occupation,employment_by_industry,labor_force,padding()]
         ],
         sizing_mode='stretch_width'),
         title='Jobs Report')
@@ -247,15 +249,15 @@ def about():
     return about
 
 page=Tabs(tabs=[
-                overall_trends(),
-                retail_sales(),
-                personal_income(),
-                weekly_claims(),
-                adp_charts(),
+#                overall_trends(),
+#                retail_sales(),
+#                personal_income(),
+#                weekly_claims(),
+#                adp_charts(),
                 jobs_report(),
-                bus_pul(),
-                miscellaneous(),
-                about()
+ #               bus_pul(),
+ #               miscellaneous(),
+ #               about()
                 ])
 """
 page=Tabs(tabs=[bus_pul()])
