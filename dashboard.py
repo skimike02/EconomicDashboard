@@ -220,7 +220,7 @@ def miscellaneous():
     url='https://www.tsa.gov/coronavirus/passenger-throughput'
     tsa=pd.read_html(requests.get(url).text,header=0)[0].dropna()
     tsa['Date']=pd.to_datetime(tsa['Date'], format='%m/%d/%Y')
-    tsa['YoY']=tsa['Total Traveler Throughput']/tsa['Total Traveler Throughput  (1 Year Ago - Same Weekday)']
+    tsa['YoY']=tsa['Total Traveler Throughput']/tsa['Total Traveler Throughput (1 Year Ago - Same Weekday)']
     tsa_chart=chart(tsa[['Date','YoY']],date='Date',title='Year over Year change in TSA checkpoint travelers',units='percent')
     housing_starts=fred_chart(['PERMIT','HOUST','SACR906BPPRIVSA'],'1990-01-01',title='Housing Starts')
     miscellaneous=Panel(child=layout([
