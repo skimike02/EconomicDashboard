@@ -24,7 +24,7 @@ import os
 import config
 from fred import (bls_compare, chart,fred_chart, bar_chart, historical_comparison, historical_data, adder_chart,
                  category_compare,padding)
-from BusinessPulseSurvey import business_pulse,qa_for_loc,qa_by_loc,compare_questions_locations,stacked_by_loc
+from BusinessPulseSurvey import business_pulse,qa_for_loc,qa_by_loc,compare_questions_locations,stacked_by_loc,qa_diff_by_loc
 
 dir_path = os.path.dirname(os.path.abspath(__file__))
 
@@ -203,9 +203,12 @@ def bus_pul():
     sacramento_status=qa_for_loc(bus_pul,qa,locations[0],title='Sacramento Responses')
     decreased_employment=qa_by_loc(bus_pul,'6-2',locations,title='Decreased Employment')
     decreased_hours=qa_by_loc(bus_pul,'8-2',locations,title='Decreased Hours')  
+    change_in_employment=qa_diff_by_loc(bus_pul,'6-1','6-2',locations,title="Businesses increasing employment less businesses decreasing employment")
+    change_in_hours=qa_diff_by_loc(bus_pul,'8-1','8-2',locations,title="Businesses increasing hours less businesses decreasing hours")
     closures=stacked_by_loc(bus_pul,dict(list(qa.items())[:2]),locations,title='Business Closures')
     business_pulse_panel=Panel(child=layout([
             [current_status,sacramento_status,padding()],
+            [change_in_employment,change_in_hours,padding()],
             [decreased_employment,decreased_hours,padding()],
             [closures,padding()]
             ],sizing_mode='stretch_width'),
@@ -249,15 +252,15 @@ def about():
     return about
 
 page=Tabs(tabs=[
-                overall_trends(),
-                retail_sales(),
-                personal_income(),
-                weekly_claims(),
-                adp_charts(),
-                jobs_report(),
+#                overall_trends(),
+#                retail_sales(),
+#                personal_income(),
+#                weekly_claims(),
+#                adp_charts(),
+#                jobs_report(),
                 bus_pul(),
-                miscellaneous(),
-                about()
+#                miscellaneous(),
+#                about()
                 ])
 """
 page=Tabs(tabs=[bus_pul()])

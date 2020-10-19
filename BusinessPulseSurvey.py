@@ -145,6 +145,38 @@ def qa_by_loc(df,qa:str,locations:list,**kwargs):
     p.legend.location = "bottom_left"
     return p
 
+def qa_diff_by_loc(df,qa:str,qa2:str,locations:list,**kwargs):
+    df=df[((df.qa==qa)|(df.qa==qa2))&(df.location.isin(locations))&(df.NAICS=='all')]
+    piv=df.pivot(index=['location','date'], columns='qa', values='value').reset_index()
+    piv['diff']=piv[qa]-piv[qa2]
+    p = figure(title=kwargs.get('title','Chart'), x_range=piv.date.unique().tolist(), plot_width=200, plot_height=400,
+           tools="pan,wheel_zoom,reset,save",
+            active_scroll=None,
+            sizing_mode='stretch_width'
+            )
+    if len(locations)>10:
+        palette=Category20[20]
+    else:
+        palette=Category10[10]
+    colors = itertools.cycle(palette)
+    for location,color in zip(locations,colors):
+        source = ColumnDataSource(piv[piv.location==location])
+        p.line(x='date',
+               y='diff',
+               source=source,
+               legend_label=location,
+               color=color,muted_color=color, muted_alpha=0.2
+            )
+    hover = HoverTool(tooltips =[
+         ('Location','@location'),
+         ('Value','@diff{0.0%}'),
+         ])
+    p.legend.click_policy="mute"
+    p.add_tools(hover)
+    p.yaxis.formatter=NumeralTickFormatter(format="0%")
+    p.legend.location = "bottom_left"
+    return p
+
 def qa_for_loc(df,qa:dict,location:str,**kwargs):
     df=df[(df.qa.isin(qa))&(df.location==location)&(df.NAICS=='all')].copy()
     df['desc']=df['qa'].map(qa)
