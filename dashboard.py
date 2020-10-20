@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+de# -*- coding: utf-8 -*-
 """
 @author: Michael Champ
 
@@ -252,15 +252,15 @@ def about():
     return about
 
 page=Tabs(tabs=[
-#                overall_trends(),
-#                retail_sales(),
-#                personal_income(),
-#                weekly_claims(),
-#                adp_charts(),
-#                jobs_report(),
+                overall_trends(),
+                retail_sales(),
+                personal_income(),
+                weekly_claims(),
+                adp_charts(),
+                jobs_report(),
                 bus_pul(),
-#                miscellaneous(),
-#                about()
+                miscellaneous(),
+                about()
                 ])
 """
 page=Tabs(tabs=[bus_pul()])
