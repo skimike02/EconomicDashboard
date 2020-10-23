@@ -50,13 +50,16 @@ def master_data(seriess:list):
                 url_series=f'https://api.stlouisfed.org/fred/series?series_id={series}&api_key={api_key}&file_type=json'
                 payload=r.get(url_series)
                 if payload.status_code==429:
+                    print("429 error retrieving master data for"+url_series)
                     time.sleep(150)
                     payload=r.get(url_series)
+                    continue
                 if payload.status_code!=200:
                     print("error retrieving "+url_series)
                     print("response: "+payload.content)
                     logging.warn(datetime.datetime.now()+" error retrieving "+url_series)
-                    logging.warn(datetime.datetime.now()+" response: "+payload.content)                    
+                    logging.warn(datetime.datetime.now()+" response: "+payload.content)    
+                    continue
                 series_dict[series]=json.loads(payload.content)['seriess'][0]
                 series_dict[series]['timestamp']=datetime.datetime.now()
                 url_series_release=f'https://api.stlouisfed.org/fred/series/release?series_id={series}&api_key={api_key}&file_type=json'
@@ -64,9 +67,11 @@ def master_data(seriess:list):
                 if payload.status_code==429:
                     time.sleep(150)
                     payload=r.get(url_series)
+                    continue
                 if payload.status_code!=200:
                     print("error retrieving "+url_series)
                     print("response: "+json.loads(payload.content))
+                    continue
                 try:
                     release_dict[series]=json.loads(payload.content)['releases'][0]
                 except:
@@ -77,11 +82,14 @@ def master_data(seriess:list):
             url_series=f'https://api.stlouisfed.org/fred/series?series_id={series}&api_key={api_key}&file_type=json'
             payload=r.get(url_series)
             if payload.status_code==429:
+                print("429 error retrieving master data for"+url_series)
                 time.sleep(150)
                 payload=r.get(url_series)
+                continue
             if payload.status_code!=200:
                 print("error retrieving"+url_series)
                 print("response: "+payload.content.decode("utf-8") )
+                continue
             series_dict[series]=json.loads(payload.content)['seriess'][0]
             series_dict[series]['timestamp']=datetime.datetime.now()
             url_series_release=f'https://api.stlouisfed.org/fred/series/release?series_id={series}&api_key={api_key}&file_type=json'
@@ -89,9 +97,11 @@ def master_data(seriess:list):
             if payload.status_code==429:
                 time.sleep(150)
                 payload=r.get(url_series)
+                continue
             if payload.status_code!=200:
                 print("error retrieving"+url_series)
                 print("response: "+json.loads(payload.content))
+                continue
             try:
                 release_dict[series]=json.loads(payload.content)['releases'][0]
                 print("loaded master data for "+series)
