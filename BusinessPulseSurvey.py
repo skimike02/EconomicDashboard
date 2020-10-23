@@ -108,7 +108,10 @@ def business_pulse(weeks):
         msa_data_url=f"https://portal.census.gov/pulse/data/downloads/{10+i}/top_50_msa_{start}_{end}.xls"
         state_data_url=f"https://portal.census.gov/pulse/data/downloads/{10+i}/national_state_sector_{start}_{end}.xls"
         code_url='https://portal.census.gov/pulse/data/downloads/codebook_2020_08_10.xlsx'
-        df=df.append(merged_data(code_url,msa_data_url,state_data_url,dt.strftime('%Y-%m-%d')))
+        try:
+            df=df.append(merged_data(code_url,msa_data_url,state_data_url,dt.strftime('%Y-%m-%d')))
+        except:
+            df=df
     df['qa']=df.questionID.astype('str')+'-'+df.answerID.astype('str')
     df.NAICS=df.NAICS.str.rstrip(' ')
     return df.merge(naics_table(),how='left',on='NAICS')
