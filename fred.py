@@ -202,6 +202,7 @@ def fred_chart(series:list,start:str,**kwargs):
     offsets=kwargs.get('offsets',[0 for x in range(len(series))])
     transformation=kwargs.get('transformation','value')
     transform_date=kwargs.get('transform_date',start)
+    legend_loc=kwargs.get('legend',"bottom_left")
     hover_formatter='@'+transformation+'{0,}'
     if transformation=='index':
         hover_formatter='@'+transformation+'{0.0%}'
@@ -247,7 +248,7 @@ def fred_chart(series:list,start:str,**kwargs):
     if transformation=='value':
         ylabel=repr(set(units)).replace('\'','').replace('{','').replace('}','')
     p.yaxis.axis_label=ylabel
-    p.legend.location = "bottom_left"
+    p.legend.location = legend_loc
     return p
 
 def chart(df,**kwargs):

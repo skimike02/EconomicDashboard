@@ -219,7 +219,7 @@ def bus_pul():
 #%% Miscellaneous
 def miscellaneous():
     logging.info('%s Misc Started', datetime.datetime.now())
-    business_applications=fred_chart(['BUSAPPWNSAUSYY','BUSAPPWNSACAYY','WBUSAPPWNSACAYY','HBUSAPPWNSACAYY'],'2020-01-01',title="Weekly Business Applications")
+    business_applications=fred_chart(['BUSAPPWNSAUSYY','BUSAPPWNSACAYY','WBUSAPPWNSACAYY','HBUSAPPWNSACAYY'],'2020-01-01',title="Weekly Business Applications",legend="top_left")
     url='https://www.tsa.gov/coronavirus/passenger-throughput'
     tsa=pd.read_html(requests.get(url).text,header=0)[0].dropna()
     tsa['Date']=pd.to_datetime(tsa['Date'], format='%m/%d/%Y')
