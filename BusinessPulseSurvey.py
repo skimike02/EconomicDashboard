@@ -12,6 +12,9 @@ import math
 import datetime
 import config
 import itertools
+import ssl
+
+ssl._create_default_https_context = ssl._create_unverified_context
 
 fileloc=config.fileloc
 filename=fileloc+'smallBusiness.csv'
