@@ -100,6 +100,7 @@ def compare_questions_locations(df,qa,locations):
 def business_pulse(weeks):
     df=pd.DataFrame()
     for i in range(0,weeks):
+        j=i
         print(i)
         dt=datetime.datetime.strptime('2020-08-15', '%Y-%m-%d')+datetime.timedelta(days=i*7)
         start=(dt-datetime.timedelta(days=6)).strftime("%d%b%y")
@@ -111,8 +112,9 @@ def business_pulse(weeks):
         if i>9:
             start=(dt-datetime.timedelta(days=5)).strftime("%d%b%y")
             end=(dt+datetime.timedelta(days=1)).strftime("%d%b%y")
-        msa_data_url=f"https://portal.census.gov/pulse/data/downloads/{10+i}/top_50_msa_{start}_{end}.xls"
-        state_data_url=f"https://portal.census.gov/pulse/data/downloads/{10+i}/national_state_sector_{start}_{end}.xls"
+            j=i-4
+        msa_data_url=f"https://portal.census.gov/pulse/data/downloads/{10+j}/top_50_msa_{start}_{end}.xls"
+        state_data_url=f"https://portal.census.gov/pulse/data/downloads/{10+j}/national_state_sector_{start}_{end}.xls"
         code_url='https://portal.census.gov/pulse/data/downloads/codebook_2020_08_10.xlsx'
         try:
             df=df.append(merged_data(code_url,msa_data_url,state_data_url,dt.strftime('%Y-%m-%d')))
