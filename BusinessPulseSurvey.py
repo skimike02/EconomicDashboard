@@ -108,6 +108,9 @@ def business_pulse(weeks):
             end=(dt+datetime.timedelta(days=2)).strftime("%d%b%y")
         if i==9:
             start=(dt-datetime.timedelta(days=4)).strftime("%d%b%y")
+        if i>9:
+            start=(dt-datetime.timedelta(days=5)).strftime("%d%b%y")
+            end=(dt+datetime.timedelta(days=1)).strftime("%d%b%y")
         msa_data_url=f"https://portal.census.gov/pulse/data/downloads/{10+i}/top_50_msa_{start}_{end}.xls"
         state_data_url=f"https://portal.census.gov/pulse/data/downloads/{10+i}/national_state_sector_{start}_{end}.xls"
         code_url='https://portal.census.gov/pulse/data/downloads/codebook_2020_08_10.xlsx'
