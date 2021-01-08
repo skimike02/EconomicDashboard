@@ -140,7 +140,7 @@ def jobs_report():
     jobs_report=Panel(child=layout([
         [national_jobs,state_jobs,local_jobs,padding()],
         [permanent_unemployment,mid_term_unemployment,long_term_unemployment,padding()],
-        [employment_by_occupation,employment_by_industry,labor_force,padding()]
+        [employment_by_occupation,employment_by_industry,labor_force,padding()],
         [industry_compare,industry_bar_difference]
         ],
         sizing_mode='stretch_width'),
