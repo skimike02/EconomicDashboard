@@ -158,9 +158,10 @@ def bls_api(series:list,start,end):
 def transform(df,*args, **kwargs):
     data=df.sort_values(by=['series','date']).copy()
     date = kwargs.get('date', '1900-01-01')
-    reference_value=data[data.date>=date].value.iloc[0]
-    data['difference']=data['value']-reference_value
-    data['index']=data['value']/reference_value
+    if len(data[data.date>=date])>0:
+        reference_value=data[data.date>=date].value.iloc[0]
+        data['difference']=data['value']-reference_value
+        data['index']=data['value']/reference_value
     return data
 
 def fred_chart(series:list,start:str,**kwargs):
@@ -341,28 +342,35 @@ def datecompare(source,start,end,**kwargs):
     source['recession']=start
     source['recession_year']=start[:4]
     df=source[(source['date']>=start)&(source['date']<end)&(source['date']<=start_date.replace(year = start_date.year + kwargs.get('years', 8)))]
+    df=transform(df)
     return df
 
 def historical_data(series,recessions:int,**kwargs):
     mdata=master_data([series]).loc[series]
     data=observations(series,'1900-01-01')
     df=pd.DataFrame()
+    transform=kwargs.get('transform','none')
     for start,end in zip(recession_starts[:recessions],[datetime.datetime.now()]+recession_starts[:recessions-1]):
         df=df.append(datecompare(data,start,end,years=kwargs.get('years', 8)))
+    if transform=='difference':
+        df.value=df.difference
+    if transform=='index':
+        df.value=df['index']*100
+        mdata.units='Percent'
     high=df.value.max()
-    if high>100:
-        formatter='{0,}'
-    elif mdata.units=='Percent':
+    if mdata.units=='Percent':
         formatter='{0.0%}'
+    elif high>100:
+        formatter='{0,}'
     else:
         formatter='{0.0}'
     return {'master_data':mdata,'data':df,'formatter':formatter}
 
-def historical_comparison(data):
+def historical_comparison(data,**kwargs):
     mdata=data['master_data']
     df=data['data']
     formatter=data['formatter']
-    p = figure(title=mdata.series_name+' in past recessions ('+mdata.seasonal_adjustment_short+')',
+    p = figure(title=kwargs.get('title',mdata.series_name+' in past recessions ('+mdata.seasonal_adjustment_short+')'),
                plot_width=200, plot_height=400,
                tools="pan,wheel_zoom,reset,save",
                active_scroll=None,

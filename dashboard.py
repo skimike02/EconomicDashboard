@@ -137,11 +137,17 @@ def jobs_report():
                 'CEU6500000001','CEU7000000001','CEU8000000001','CEU9091000001','CEU9092000001','CEU9093000001']
     industry_compare=fred_chart(industries,'2019-01-01',transformation='index',transform_date=rs,title="Change in Employment",lstrip=14)
     industry_bar_difference=bar_chart(industries,cy,transformation='difference',transform_date=rs,title='Change in Employment',lstrip=14,rstrip=0,legend=False,net=True)
+    national_change=historical_comparison(historical_data('PAYEMS',recessions,transform='index'),title='Change in Total Employment')
+    state_change=historical_comparison(historical_data('CANA',recessions,transform='index'),title='Change in California Employment')
+    state_change.y_range=national_change.y_range
+    local_change=historical_comparison(historical_data('SACR906NA',recessions,transform='index'),title='Change in Sac Metro Employment')
+    local_change.y_range=national_change.y_range
     jobs_report=Panel(child=layout([
+        [national_change,state_change,local_change,padding()],
         [national_jobs,state_jobs,local_jobs,padding()],
         [permanent_unemployment,mid_term_unemployment,long_term_unemployment,padding()],
         [employment_by_occupation,employment_by_industry,labor_force,padding()],
-        [industry_compare,industry_bar_difference]
+        [industry_compare,industry_bar_difference,padding()]
         ],
         sizing_mode='stretch_width'),
         title='Jobs Report')
@@ -257,15 +263,15 @@ def about():
     return about
 
 page=Tabs(tabs=[
-                overall_trends(),
-                retail_sales(),
-                personal_income(),
-                weekly_claims(),
-                adp_charts(),
+                #overall_trends(),
+                #retail_sales(),
+                #personal_income(),
+                #weekly_claims(),
+                #adp_charts(),
                 jobs_report(),
-                bus_pul(),
-                miscellaneous(),
-                about()
+                #bus_pul(),
+                #miscellaneous(),
+                #about()
                 ])
 """
 page=Tabs(tabs=[bus_pul()])
