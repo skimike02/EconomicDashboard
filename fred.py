@@ -287,7 +287,6 @@ def bar_chart(series:list,start:str,**kwargs):
     chart_data.set_index('datestring',inplace=True)
     p = figure(title=kwargs.get('title','Chart'),x_range=chart_data.reset_index().datestring.tolist(),plot_width=200, plot_height=400,
        tools="pan,wheel_zoom,reset,save",
-       tooltips="$name @datestring: @$name{0,}",
        active_scroll=None,
        sizing_mode='stretch_width',
         )
@@ -316,8 +315,8 @@ def bar_chart(series:list,start:str,**kwargs):
                width=2,
                legend_label='Net'
                )
-        hover = HoverTool(tooltips ="Net: @net{0,}",renderers=[line_r])
-        p.add_tools(hover)
+        hover2 = HoverTool(tooltips ="Net @datestring @net{0,}",renderers=[line_r])
+        p.add_tools(hover2)
     p.yaxis.formatter=NumeralTickFormatter(format="0,")
     if transformation=='index':
         ylabel='Percent of '+transform_date+' value'

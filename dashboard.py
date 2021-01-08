@@ -133,10 +133,15 @@ def jobs_report():
     employment_by_industry.legend.location='bottom_right'
     labor_force_categories=['CLF16OV','LNS11000002','LNS11000001']
     labor_force=fred_chart(labor_force_categories,cy,transformation='index',transform_date=rs,title='Labor Force Level')
+    industries=['CEU1000000001','CEU2000000001','CEU3000000001','CEU4000000001','CEU5000000001','CEU5500000001','CEU6000000001',
+                'CEU6500000001','CEU7000000001','CEU8000000001','CEU9091000001','CEU9092000001','CEU9093000001']
+    industry_compare=fred_chart(industries,'2019-01-01',transformation='index',transform_date=rs,title="Change in Employment",lstrip=14)
+    industry_bar_difference=bar_chart(industries,cy,transformation='difference',transform_date=rs,title='Change in Employment',lstrip=14,rstrip=0,legend=False,net=True)
     jobs_report=Panel(child=layout([
         [national_jobs,state_jobs,local_jobs,padding()],
         [permanent_unemployment,mid_term_unemployment,long_term_unemployment,padding()],
         [employment_by_occupation,employment_by_industry,labor_force,padding()]
+        [industry_compare,industry_bar_difference]
         ],
         sizing_mode='stretch_width'),
         title='Jobs Report')
