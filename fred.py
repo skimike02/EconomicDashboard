@@ -150,7 +150,7 @@ def bls_api(series:list,start,end):
         tmp['date']=pd.to_datetime(tmp.year+tmp.period.str[-2:]+'01',format='%Y%m%d')
         tmp.set_index('series',inplace=True)
         df=df.append(tmp)
-        df.drop(columns=['periodName','latest','footnotes','year','period'],inplace=True)
+        df.drop(columns=['periodName','footnotes','year','period'],inplace=True)
         df['value'] = pd.to_numeric(df['value'],errors='coerce')
     sticky_observations=sticky_observations.append(df)
     return df
@@ -467,7 +467,7 @@ def category_compare(series:list,title:str,**kwargs):
 
 def bls_compare(series,categories,title,**kwargs):
     metric=kwargs.get('metric', 'pct')
-    df=bls_api(series,2020,2020)
+    df=bls_api(series,2020,2021)
     pct_change, change, month_change, month_pct_change=[],[],[],[]
     for item in series:
         data=transform(df[df.index==item],date='2020-02-01')
