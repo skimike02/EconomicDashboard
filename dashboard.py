@@ -232,10 +232,11 @@ def miscellaneous():
     logging.info('%s Misc Started', datetime.datetime.now())
     business_applications=fred_chart(['BUSAPPWNSAUSYY','BUSAPPWNSACAYY','WBUSAPPWNSACAYY','HBUSAPPWNSACAYY'],'2020-01-01',title="Weekly Business Applications",legend="top_left")
     url='https://www.tsa.gov/coronavirus/passenger-throughput'
-    tsa=pd.read_html(requests.get(url).text,header=0)[0].dropna()
+    tsa=pd.read_html(requests.get(url).text,header=0)[0]
     tsa['Date']=pd.to_datetime(tsa['Date'], format='%m/%d/%Y')
-    tsa['YoY']=tsa['Total Traveler Throughput']/tsa['Total Traveler Throughput (1 Year Ago - Same Weekday)']
-    tsa_chart=chart(tsa[['Date','YoY']],date='Date',title='Year over Year change in TSA checkpoint travelers',units='percent')
+    tsa['combined']=tsa['2021 Traveler Throughput'].fillna(tsa['2020 Traveler Throughput'])
+    tsa['YoY']=tsa['combined']/tsa['2019 Traveler Throughput']
+    tsa_chart=chart(tsa[['Date','YoY']],date='Date',title='TSA Travelers vs 2019 levels',units='percent')
     housing_starts=fred_chart(['PERMIT','HOUST','SACR906BPPRIVSA'],'1990-01-01',title='Housing Starts')
     miscellaneous=Panel(child=layout([
         [business_applications,tsa_chart,padding()],
