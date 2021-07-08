@@ -270,14 +270,11 @@ page=Tabs(tabs=[
                 weekly_claims(),
                 adp_charts(),
                 jobs_report(),
-                bus_pul(),
+                #bus_pul(),
                 miscellaneous(),
                 about()
                 ])
-"""
-page=Tabs(tabs=[bus_pul()])
-show(page)
-"""
+
 logging.info("%s saving file to "+fileloc+'Economy.html', datetime.datetime.now())
 
 print("saving file to "+fileloc+'Economy.html')

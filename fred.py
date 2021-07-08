@@ -180,7 +180,7 @@ def fred_chart(series:list,start:str,**kwargs):
     colors = itertools.cycle(palette)
     p = figure(title=kwargs.get('title','Chart'), x_axis_type='datetime', plot_width=200, plot_height=400,
            tools="pan,wheel_zoom,reset,save",
-            active_scroll=None,
+            #active_scroll='Auto',
             sizing_mode='stretch_width'
             )
     units=[]
@@ -233,7 +233,7 @@ def chart(df,**kwargs):
     colors = itertools.cycle(palette)
     p = figure(title=kwargs.get('title','Chart'), x_axis_type='datetime', plot_width=200, plot_height=400,
            tools="pan,wheel_zoom,reset,save",
-            active_scroll=None,
+            #active_scroll='Auto',
             sizing_mode='stretch_width'
             )
     for series,color in zip(df.columns.drop(date).tolist(),colors):
@@ -288,7 +288,7 @@ def bar_chart(series:list,start:str,**kwargs):
     chart_data.set_index('datestring',inplace=True)
     p = figure(title=kwargs.get('title','Chart'),x_range=chart_data.reset_index().datestring.tolist(),plot_width=200, plot_height=400,
        tools="pan,wheel_zoom,reset,save",
-       active_scroll=None,
+       #active_scroll='Auto',
        sizing_mode='stretch_width',
         )
     positive=p.vbar_stack(names,
@@ -373,7 +373,7 @@ def historical_comparison(data,**kwargs):
     p = figure(title=kwargs.get('title',mdata.series_name+' in past recessions ('+mdata.seasonal_adjustment_short+')'),
                plot_width=200, plot_height=400,
                tools="pan,wheel_zoom,reset,save",
-               active_scroll=None,
+               #active_scroll='Auto',
                sizing_mode='stretch_width'
             )
     if formatter=='{0.0%}':
