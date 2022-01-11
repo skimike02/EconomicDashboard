@@ -234,9 +234,18 @@ def miscellaneous():
     url='https://www.tsa.gov/coronavirus/passenger-throughput'
     tsa=pd.read_html(requests.get(url).text,header=0)[0]
     tsa['Date']=pd.to_datetime(tsa['Date'], format='%m/%d/%Y')
-    tsa['combined']=tsa['2021 Traveler Throughput'].fillna(tsa['2020 Traveler Throughput'])
-    tsa['YoY']=tsa['combined']/tsa['2019 Traveler Throughput']
-    tsa_chart=chart(tsa[['Date','YoY']],date='Date',title='TSA Travelers vs 2019 levels',units='percent')
+    #tsa['combined']=tsa['2021'].fillna(tsa['2020'])
+    years=['2020','2021','2022']
+    for year in years:
+        tsa[year]=tsa[year]/tsa['2019']
+    melted=pd.melt(tsa,id_vars=['Date'],value_vars=['2020','2021','2022'])
+    melted['month']=pd.DatetimeIndex(melted.Date).month
+    melted['day']=pd.DatetimeIndex(melted.Date).day
+    melted['year']=melted.variable
+    melted['date']=pd.to_datetime(melted[['year','month','day']])
+    melted.sort_values(by='date',inplace=True)
+    #tsa['YoY']=tsa['combined']/tsa['2019']
+    tsa_chart=chart(melted[['date','value']],date='date',title='TSA Travelers vs 2019 levels',units='percent')
     housing_starts=fred_chart(['PERMIT','HOUST','SACR906BPPRIVSA'],'1990-01-01',title='Housing Starts')
     miscellaneous=Panel(child=layout([
         [business_applications,tsa_chart,padding()],
