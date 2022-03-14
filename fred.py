@@ -80,7 +80,7 @@ def master_data(seriess:list):
             series_dict[series]=json.loads(payload.content)['seriess'][0]
             series_dict[series]['timestamp']=datetime.datetime.now()
             url_series_release=f'https://api.stlouisfed.org/fred/series/release?series_id={series}&api_key={api_key}&file_type=json'
-            payload=get_data(url_series_release,3,60)
+            payload=get_data(url_series_release,3,10)
             try:
                 release_dict[series]=json.loads(payload.content)['releases'][0]
                 print("loaded master data for "+series)
@@ -96,7 +96,8 @@ def master_data(seriess:list):
         df2.drop(columns=['realtime_start','realtime_end'],inplace=True)
         df2.rename(columns={'id':'release_id','name':'release_name'},inplace=True)
         df=df.join(df2, rsuffix='_release')
-        sticky_master=sticky_master.append(df)
+        #sticky_master=sticky_master.append(df)
+        sticky_master=pd.concat([sticky_master,df])
     pickle.dump(sticky_master,open('master.p','wb'))
     return sticky_master
 
@@ -130,7 +131,7 @@ def observations(series:str,start:str,**kwargs):
     df.date=df.date+np.timedelta64(dateoffset,'D')
     df['series']=series
     df.set_index('series',inplace=True)
-    sticky_observations=sticky_observations.append(df)
+    sticky_observations=pd.concat([sticky_observations,df])
     pickle.dump(sticky_observations,open('observations.p','wb'))
     return sticky_observations[sticky_observations.date>=start].loc[series]
 
@@ -149,10 +150,12 @@ def bls_api(series:list,start,end):
         tmp['series']=i['seriesID']
         tmp['date']=pd.to_datetime(tmp.year+tmp.period.str[-2:]+'01',format='%Y%m%d')
         tmp.set_index('series',inplace=True)
-        df=df.append(tmp)
+        #df=df.append(tmp)
+        df=pd.concat([df,tmp])
         df.drop(columns=['periodName','footnotes','year','period'],inplace=True)
         df['value'] = pd.to_numeric(df['value'],errors='coerce')
-    sticky_observations=sticky_observations.append(df)
+    #sticky_observations=sticky_observations.append(df)
+    sticky_observations=pd.concat([sticky_observations,df])    
     return df
 
 def transform(df,*args, **kwargs):
@@ -284,7 +287,7 @@ def bar_chart(series:list,start:str,**kwargs):
         chart_data=chart_data.merge(df,how='outer',on='datestring',copy=True)
         units.append(mdata.loc[series_item].units)
     names=chart_data.drop(columns='datestring').columns.tolist()
-    chart_data['net']=chart_data.drop('datestring', 1).sum(axis=1).rename('sum')
+    chart_data['net']=chart_data.drop(columns='datestring', axis=1).sum(axis=1).rename('sum')
     chart_data.set_index('datestring',inplace=True)
     p = figure(title=kwargs.get('title','Chart'),x_range=chart_data.reset_index().datestring.tolist(),plot_width=200, plot_height=400,
        tools="pan,wheel_zoom,reset,save",
@@ -351,7 +354,8 @@ def historical_data(series,recessions:int,**kwargs):
     df=pd.DataFrame()
     transform=kwargs.get('transform','none')
     for start,end in zip(recession_starts[:recessions],[datetime.datetime.now()]+recession_starts[:recessions-1]):
-        df=df.append(datecompare(data,start,end,years=kwargs.get('years', 8)))
+        #df=df.append(datecompare(data,start,end,years=kwargs.get('years', 8)))
+        df=pd.concat([df,datecompare(data,start,end,years=kwargs.get('years', 8))])
     if transform=='difference':
         df.value=df.difference
     if transform=='index':
@@ -422,7 +426,8 @@ def adder_chart(base:str,adder,recessions,**kwargs):
     tmp2['value']=tmp2['value_x']+tmp2['value_y']
     tmp2['recession']='2020-02-01 (incl PUA)'
     tmp2['recession_year']='2020 (incl PUA)'    
-    tmp['data']=tmp2.append(tmp['data'])
+    #tmp['data']=tmp2.append(tmp['data'])
+    tmp['data']=pd.concat([tmp2,tmp['data']])
     p=historical_comparison(tmp)
     p.renderers[1]._property_values['glyph'].line_width=3
     p.renderers[0]._property_values['glyph'].line_color='blue'
@@ -478,7 +483,7 @@ def bls_compare(series,categories,title,**kwargs):
     df=bls_api(series,2020,2021)
     pct_change, change, month_change, month_pct_change=[],[],[],[]
     for item in series:
-        data=transform(df[df.index==item],date='2020-02-01')
+        data=transform(observations(item,'2020-02-01'),date='2020-02-01')
         change.append(data.tail(1).iloc[0]['difference'])
         pct_change.append(data.tail(1).iloc[0]['index']-1)
         month_change.append(data.value.tail(1).iloc[0]-data.value.tail(2).head(1).iloc[0])

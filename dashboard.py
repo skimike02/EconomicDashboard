@@ -11,6 +11,7 @@ To do:
 """
 
 import pandas as pd
+import numpy as np
 import math
 import datetime
 import requests
@@ -37,6 +38,8 @@ logging.info('%s Economic Dashboard Started', datetime.datetime.now())
 
 PUA_url='https://oui.doleta.gov/unemploy/docs/weekly_pandemic_claims.xlsx'
 pua_data=pd.read_excel(PUA_url)
+pua_data.loc[:, ['PUA IC']]=pua_data.loc[:, ['PUA IC']].replace (r'\s+', np.nan, regex=True)
+
 fileloc=config.fileloc
 
 y2k='2000-01-01'
@@ -123,12 +126,13 @@ def jobs_report():
     occupations=['LNU02032201','LNU02032204','LNU02032205','LNU02032208','LNU02032212']
     employment_by_occupation=category_compare(occupations,'Change in Employment by Occupation',nameoffset=19)
     employment_by_occupation.legend.location='bottom_left'
-    industries=['LNU02034560','LNU02034561','LNU02034562','LNU02034563','LNU02034566','LNU02034570','LNU02034571',
-               'LNU02034572','LNU02034573','LNU02034574','LNU02034575','LNU02034576','LNU02034579']
-    industry_names=['Agriculture, forestry, fishing, and hunting','Mining, quarrying, and oil and gas extraction',
-                    'Construction','Manufacturing','Wholesale and Retail Trade','Transportation and Utilities',
-                    'Information','Financial Services','Professional and Business Services','Education and health services',
-                    'Leisure and hospitality','Other services','Public administration']
+    industries=['LNU02032202','LNU02032203','LNU02032204','LNU02032206',
+                'LNU02032207','LNU02032209','LNU02032210','LNU02032211',
+                'LNU02032213','LNU02032214']
+    industry_names=['Management, Business, and Financial Operations','Professional and Related','Service','Sales and Related',
+                    'Office and Administrative Support','Farming, Fishing, and Forestry','Construction and Extraction','Installation, Maintenance, and Repair',
+                    'Production','Transportation and Material Moving']
+
     employment_by_industry=bls_compare(industries,industry_names,'Change in Employment by Industry')
     employment_by_industry.legend.location='bottom_right'
     labor_force_categories=['CLF16OV','LNS11000002','LNS11000001']
