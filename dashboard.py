@@ -69,7 +69,7 @@ def overall_trends():
 def weekly_claims():
     logging.info('%s Weekly Claims Started', datetime.datetime.now())
     recessions=5
-    national_initial_claims=adder_chart('ICNSA',pua_data.groupby(by='Rptdate').sum()[['PUA IC']].rename(columns={'PUA IC':'value'}),recessions,years=3)
+    national_initial_claims=adder_chart('ICNSA',pua_data.groupby(by='Rptdate').fillna(0).sum()[['PUA IC']].rename(columns={'PUA IC':'value'}),recessions,years=3)
     ca_initial_claims=adder_chart('CAICLAIMS',pua_data[pua_data.State=='CA'][['Rptdate','PUA IC']].rename(columns={'PUA IC':'value'}),recessions,years=3)
     national_continuing_claims=adder_chart('CCNSA',pua_data.groupby(by='Rptdate').sum(min_count=1)[['PUA CC']].rename(columns={'PUA CC':'value'}),recessions,years=3)
     ca_continuing_claims=adder_chart('CACCLAIMS',pua_data[pua_data.State=='CA'][['Rptdate','PUA CC']].rename(columns={'PUA CC':'value'}),recessions,years=3)
