@@ -12,7 +12,7 @@ fileloc=config.fileloc
 url='https://www.bls.gov/news.release/cpi.t02.htm'
 html=requests.get(url).text
 soup = BeautifulSoup(html)
-output_file="test.html"
+output_file="inflation.html"
 
 #%% Process Data
 #Define hierarchy
@@ -130,4 +130,4 @@ fig.update_layout(
 )
 
 fig.write_html(output_file)
-(fileloc+'Economy.html')
+(fileloc+output_file)
