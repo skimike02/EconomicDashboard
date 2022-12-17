@@ -7,7 +7,6 @@ import config
 
 fileloc=config.fileloc
 
-
 #%% Get Data
 url='https://www.bls.gov/news.release/cpi.t02.htm'
 html=requests.get(url).text
@@ -43,7 +42,7 @@ for i in range(1,len(data)):
     prior_level=data[i][0]
     parent=curr_hier[len(curr_hier)-2]
     data[i].append(parent)
-    
+
 hier = pd.DataFrame(data)
 hier.columns=['lvl','name','parent']
 hier.iloc[:, 1]=hier.iloc[:, 1].str.replace(r"\(.*\)","",regex=True)
@@ -59,7 +58,7 @@ df.rename(columns={df.columns[0]: 'name',
 for i in range (1,7):
     df.iloc[:, i]=pd.to_numeric(df.iloc[:, i],errors='coerce')/100
 
-    
+
 df=df.merge(hier, left_on='name', right_on='name', how='inner')
 #address rounding issues with weightings. Iteratively calculate the weight of child nodes, and increase weight if needed.
 for i in range (0,df['lvl'].max()):
@@ -129,5 +128,4 @@ fig.update_layout(
     sliders=sliders
 )
 
-fig.write_html(output_file)
-(fileloc+output_file)
+fig.write_html(fileloc+output_file)
