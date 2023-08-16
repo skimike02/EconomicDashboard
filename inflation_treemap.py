@@ -117,7 +117,7 @@ fig.add_trace(
     hovertemplate="""<b>%{label} </b> <br>
                     Inflation: %{color:.2p} <br>
                     Annualized Rate: %{customdata[1]:.2p} <br>
-                    Last 12 months:  %{customdata[0]:.2p}% 
+                    Last 12 months:  %{customdata[0]:.2p}
                     <extra></extra>
                     """
 
