@@ -10,18 +10,19 @@ fileloc=config.fileloc
 #%% Get Data
 url='https://www.bls.gov/news.release/cpi.t02.htm'
 headers = {
-    'Sec-Ch-Ua': '"Not A(Brand";v="24", "Chromium";v="110"',
+    'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
     'Sec-Ch-Ua-Mobile': '?0',
     'Sec-Ch-Ua-Platform': '"Windows"',
     'Upgrade-Insecure-Requests': '1',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.5481.178 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'Sec-Fetch-Site': 'none',
     'Sec-Fetch-Mode': 'navigate',
     'Sec-Fetch-User': '?1',
     'Sec-Fetch-Dest': 'document',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'en-US,en;q=0.9'
+    'Accept-Encoding': 'gzip, deflate,br',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Cache-Control': 'max-age=0'
 }
 html=requests.get(url,headers=headers).text
 soup = BeautifulSoup(html)
@@ -85,7 +86,7 @@ for i in range (0,df['lvl'].max()):
 
 df['curr_mo_annualized']=((1+df.iloc[:, 6])**12)-1
 
-time_period=df.columns[6][-8:]
+time_period=df.columns[6][-9:]
        
 #%% Make treemap
 color_range=round(max(abs(df[df['lvl']<5].iloc[:,6].min()),df[df['lvl']<5].iloc[:,6].max()),2)
